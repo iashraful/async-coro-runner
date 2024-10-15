@@ -1,6 +1,5 @@
 {
   "python.analysis.typeCheckingMode": "basic",
-  "python.testing.pytestArgs": ["coro_runner/tests.py"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true
 }

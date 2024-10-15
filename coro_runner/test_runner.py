@@ -10,7 +10,7 @@ from coro_runner.runner import CoroRunner
 async def test_coro_runner():
     async def my_coro():
         current_task: asyncio.Task | None = asyncio.current_task()
-        print("Task ended: ", current_task.get_name() if current_task else "No name")
+        print("Task started: ", current_task.get_name() if current_task else "No name")
         await asyncio.sleep(random() * 2)
         print("Task ended: ", current_task.get_name() if current_task else "No name")
 
