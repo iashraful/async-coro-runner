@@ -36,3 +36,11 @@ class CoroRunner:
     async def run_until_exit(self):
         while self.running_task_count != -1:
             await asyncio.sleep(0.1)
+
+    async def run_until_finished(self):
+        while self.running_task_count > 0:
+            await asyncio.sleep(0.1)
+
+    async def cleanup(self):
+        self._running = set()
+        self._waiting = deque()

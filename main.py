@@ -8,14 +8,14 @@ from coro_runner.runner import CoroRunner
 from fastapi import FastAPI
 
 app = FastAPI()
-runner = CoroRunner(concurrency=200)
+runner = CoroRunner(concurrency=25)
 
 
 async def rand_delay():
-    rnd = random() + 0.5
-    print("Task started: ", asyncio.current_task().get_name())
-    await asyncio.sleep(rnd)
-    print("Task ended: ", asyncio.current_task().get_name())
+    current_task: asyncio.Task | None = asyncio.current_task()
+    print("Task started: ", current_task.get_name() if current_task else "No name")
+    await asyncio.sleep(random() * 5)
+    print("Task ended: ", current_task.get_name() if current_task else "No name")
 
 
 @app.get("/fire-task")
@@ -29,7 +29,12 @@ async def startup():
     await runner.run_until_exit()
 
 
+async def shutdown():
+    await runner.cleanup()
+
+
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
     await startup()
     yield
+    await shutdown()
