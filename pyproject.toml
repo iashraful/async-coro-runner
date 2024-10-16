@@ -1,20 +1,19 @@
 [tool.poetry]
-name = "asyncio-task-runner"
-version = "0.1.0"
-description = "It's a python based asyncio task schedular/queue mechanism"
 authors = ["Ashraful <ashrafulrobin3@gmail.com>"]
+description = "It's a python based asyncio task schedular/queue mechanism"
 license = "MIT"
+name = "coro-runner"
 readme = "README.md"
+version = "0.0.1"
 
 [tool.poetry.dependencies]
-python = "^3.12"
 fastapi = {extras = ["standard"], version = "^0.115.2"}
-
+python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
 
 [build-system]
-requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core"]
