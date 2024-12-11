@@ -1,45 +1,95 @@
 # AsyncIO Task Runner (Coro Runner)
 
-As we know asyncio is the builtin module since python3.4(decorator based). This module is to use build a **single threaded concurrancy** model with asyncio module.
+The **AsyncIO Task Runner** (Coro Runner) is a Python utility designed for managing concurrent asynchronous tasks using the built-in `asyncio` module. It provides an efficient way to execute multiple tasks in a single-threaded environment with customizable concurrency limits.
+
+This project leverages `asyncio` (introduced in Python 3.4) to simplify handling of asynchronous workloads, making it ideal for lightweight, scalable applications.
 
 ## Features
 
-* Set concurrency while define the runner.
-* Multiple tasks can be run concurrently.
+- **Configurable Concurrency**: Define the number of concurrent tasks when initializing the runner.
+- **Efficient Task Management**: Run multiple tasks concurrently with streamlined execution control.
 
-**To be implemented soon...**
+### Planned Enhancements
 
-* Monitoring tool integration
-* Low level API(callback, acknowledment, etc...)
-* Robust logging
+- **Monitoring Tool Integration**: Support for real-time task monitoring and analytics.
+- **Low-Level API**: Features such as callbacks, acknowledgments, and error handling for advanced use cases.
+- **Robust Logging**: Detailed logging to track task execution and debug issues.
 
-## How to contribute?
+## Getting Started
 
-* **Step 1:** Run `poetry shell` to activate the shell. You'll need Python 3.12 or latest
-* **Step 2:** Run `poerty install`
-* **Step 3:** Run `pytest -s`
-* **Sample Test Run:**
+### Prerequisites
 
+- Python 3.12 or later
+- [Poetry](https://python-poetry.org/) for dependency management
+
+### Installation and Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/iashraful/async-coro-runner.git
+   cd async-coro-runner
+   ```
+
+2. Activate the virtual environment:
+   ```bash
+   poetry shell
+   ```
+
+3. Install dependencies:
+   ```bash
+   poetry install
+   ```
+
+### Running Tests
+
+Run the test suite to verify the setup:
 ```bash
-coro_runner/test_runner.py 
-Task started:  Task-2
-Task started:  Task-3
-Task started:  Task-4
-Task started:  Task-5
-Task started:  Task-6
-Task started:  Task-7
-Task started:  Task-8
-Task started:  Task-9
-Task started:  Task-10
-Task started:  Task-11
-Task ended:  Task-3
-Task ended:  Task-4
-Task ended:  Task-9
-Task ended:  Task-7
-Task ended:  Task-11
-Task ended:  Task-6
-Task ended:  Task-10
-Task ended:  Task-2
-Task ended:  Task-8
-Task ended:  Task-5
+pytest -s
 ```
+
+**Sample Output:**
+```text
+Task started:  Task-1
+Task ended:    Task-1
+...
+```
+
+## Example Usage
+
+The project includes an example API implemented with FastAPI. It demonstrates how to use the task runner to manage asynchronous tasks.
+
+### Starting the API
+
+1. Run the API server:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+2. Trigger tasks using the endpoint:
+   ```bash
+   GET /fire-task?count=25
+   ```
+
+### Code Highlights
+
+- Define and schedule tasks:
+  ```python
+  runner = CoroRunner(concurrency=25)
+  runner.add_task(rand_delay())
+  ```
+- Task lifecycle management:
+  ```python
+  async def startup():
+      await runner.run_until_exit()
+  
+  async def shutdown():
+      await runner.cleanup()
+  ```
+
+## How to Contribute
+
+Contributions are welcome! Follow these steps to get started:
+
+1. Fork the repository and create a new branch for your feature or bug fix.
+2. Write tests for your changes.
+3. Open a pull request with a clear description of your contribution.
