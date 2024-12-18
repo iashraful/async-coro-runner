@@ -17,6 +17,27 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 
 ## Getting Started
 
+### Quickstart
+
+- Define and schedule tasks:
+
+  ```python
+  runner = CoroRunner(concurrency=25)
+
+  # Add your tasks from anywhere
+  runner.add_task(your_task()) # your_task must be a coroutine or future like object
+  ```
+
+- Task lifecycle management: (On app start and end you must run the runner. Don't worry it'll run under same process.)
+
+  ```python
+  async def startup():
+      await runner.run_until_exit()
+  
+  async def shutdown():
+      await runner.cleanup()
+  ```
+
 ### Prerequisites
 
 - Python 3.12 or later
@@ -25,17 +46,20 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 ### Installation and Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/iashraful/async-coro-runner.git
    cd async-coro-runner
    ```
 
 2. Activate the virtual environment:
+
    ```bash
    poetry shell
    ```
 
 3. Install dependencies:
+
    ```bash
    poetry install
    ```
@@ -43,11 +67,13 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 ### Running Tests
 
 Run the test suite to verify the setup:
+
 ```bash
 pytest -s
 ```
 
 **Sample Output:**
+
 ```text
 Task started:  Task-1
 Task ended:    Task-1
@@ -61,30 +87,16 @@ The project includes an example API implemented with FastAPI. It demonstrates ho
 ### Starting the API
 
 1. Run the API server:
+
    ```bash
    uvicorn main:app --reload
    ```
 
 2. Trigger tasks using the endpoint:
+
    ```bash
    GET /fire-task?count=25
    ```
-
-### Code Highlights
-
-- Define and schedule tasks:
-  ```python
-  runner = CoroRunner(concurrency=25)
-  runner.add_task(rand_delay())
-  ```
-- Task lifecycle management:
-  ```python
-  async def startup():
-      await runner.run_until_exit()
-  
-  async def shutdown():
-      await runner.cleanup()
-  ```
 
 ## How to Contribute
 
