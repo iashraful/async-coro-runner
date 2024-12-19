@@ -4,13 +4,13 @@ description = "It's a python based asyncio task schedular/queue mechanism"
 license = "MIT"
 name = "coro-runner"
 readme = "README.md"
-version = "0.0.2"
+version = "0.0.3"
 
 [tool.poetry.dependencies]
-fastapi = {extras = ["standard"], version = "^0.115.2"}
 python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
+fastapi = {extras = ["standard"], version = "^0.115.2"}
 pytest = "^8.3.3"
 pytest-asyncio = "^0.24.0"
 
