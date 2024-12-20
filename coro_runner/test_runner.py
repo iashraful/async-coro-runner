@@ -3,7 +3,7 @@ from random import random
 
 import pytest
 
-from coro_runner.runner import CoroRunner
+from coro_runner import CoroRunner
 
 
 @pytest.mark.asyncio

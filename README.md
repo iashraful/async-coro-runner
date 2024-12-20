@@ -26,9 +26,11 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 - Define and schedule tasks:
 
   ```python
-  runner = CoroRunner(concurrency=25)
+  from coro_runner import CoroRunner
 
-  # Add your tasks from anywhere
+
+  runner = CoroRunner(concurrency=25)
+  # Add your tasks from anywhere b       
   runner.add_task(your_task()) # your_task must be a coroutine or future like object
   ```
 
