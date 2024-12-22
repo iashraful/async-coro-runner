@@ -2,13 +2,11 @@ import asyncio
 import logging
 from random import random
 
-from fastapi.concurrency import asynccontextmanager
-from coro_runner.runner import CoroRunner
-
-
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
 
-from coro_runner.schema import Worker, WorkerConfig
+from coro_runner import Worker, WorkerConfig
+from coro_runner.runner import CoroRunner
 
 # Log Config
 logger = logging.getLogger(__name__)
