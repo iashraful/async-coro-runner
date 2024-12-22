@@ -2,7 +2,8 @@ from collections import deque
 import asyncio
 from typing import Any, Coroutine
 
-from coro_runner.utils import prepare_worker_queue
+from .utils import prepare_worker_queue
+from .logging import logger
 
 from .schema import WorkerConfig
 
@@ -65,6 +66,7 @@ class CoroRunner:
         return None
 
     def add_task(self, coro: Any, worker_name: str | None = None):
+        logger.debug(f"Adding {coro.__name__} to worker: {worker_name}")
         if worker_name is None:
             worker_name = self._default_worker
         if len(self._running) >= self._concurrency:
@@ -75,6 +77,7 @@ class CoroRunner:
     def _start_task(self, coro):
         self._running.add(coro)
         asyncio.create_task(self._task(coro))
+        logger.debug(f"Started task: {coro.__name__}")
 
     async def _task(self, coro):
         try:

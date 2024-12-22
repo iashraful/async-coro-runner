@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from random import random
 
 from fastapi.concurrency import asynccontextmanager
@@ -7,21 +8,59 @@ from coro_runner.runner import CoroRunner
 
 from fastapi import FastAPI
 
-app = FastAPI()
-runner = CoroRunner(concurrency=25)
+from coro_runner.schema import Worker, WorkerConfig
+
+# Log Config
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
+app = FastAPI(title="Coro Runner Exampleåå")
+runner = CoroRunner(
+    concurrency=25,
+    worker=WorkerConfig(
+        workers=[
+            Worker(name="send_mail", score=2),
+            Worker(name="async_task", score=10),
+            Worker(name="low_priority", score=0.1),
+        ],
+    ),
+)
 
 
 async def rand_delay():
     current_task: asyncio.Task | None = asyncio.current_task()
-    print("Task started: ", current_task.get_name() if current_task else "No name")
+    logger.info(
+        f"Random Delay started: {current_task.get_name() if current_task else 'No Name'}",
+    )
     await asyncio.sleep(random() * 5)
-    print("Task ended: ", current_task.get_name() if current_task else "No name")
+    logger.info(
+        f"Random Delay ended: {current_task.get_name() if current_task else 'No name'}"
+    )
 
 
-@app.get("/fire-task")
-async def fire_another_task(count: int = 25):
+async def dummy_email_send():
+    current_task: asyncio.Task | None = asyncio.current_task()
+    logger.info(
+        f"Dummy Send Email started: {current_task.get_name() if current_task else 'No Name'}",
+    )
+    await asyncio.sleep(random() * 3)
+    logger.info(
+        f"Dummy Send Email ended: {current_task.get_name() if current_task else 'No name'}"
+    )
+
+
+@app.get("/random-delay")
+async def fire_random_delay(count: int = 25):
     for _ in range(count):
-        runner.add_task(rand_delay())
+        runner.add_task(rand_delay(), worker_name="low_priority")
+    return {"Task": "Done"}
+
+
+@app.get("/dummy-send-email")
+async def fire_send_email(count: int = 25):
+    for _ in range(count):
+        runner.add_task(dummy_email_send(), worker_name="send_mail")
     return {"Task": "Done"}
 
 
