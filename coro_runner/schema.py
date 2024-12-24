@@ -2,11 +2,11 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Worker:
+class Queue:
     name: str
     score: float
 
 
 @dataclass
-class WorkerConfig:
-    workers: list[Worker]
+class QueueConfig:
+    queues: list[Queue]

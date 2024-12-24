@@ -5,16 +5,16 @@ from random import random
 import pytest
 
 from coro_runner import CoroRunner
-from coro_runner.schema import Worker, WorkerConfig
+from coro_runner.schema import Queue, QueueConfig
 
 # Log Config
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
-# Defining the worker configuration
-rg_worker = Worker(name="Regular", score=1)
-hp_worker = Worker(name="HighPriority", score=10)
+# Defining the queue configuration
+rg_queue = Queue(name="Regular", score=1)
+hp_queue = Queue(name="HighPriority", score=10)
 
 
 @pytest.mark.asyncio
@@ -40,15 +40,15 @@ async def test_coro_runner():
         )
 
     runner = CoroRunner(
-        concurrency=5, worker=WorkerConfig(workers=[rg_worker, hp_worker])
+        concurrency=5, queue_conf=QueueConfig(queues=[rg_queue, hp_queue])
     )
     logger.debug("Adding regular tasks")
     for _ in range(10):
-        runner.add_task(regular_coro(), worker_name=rg_worker.name)
+        runner.add_task(regular_coro(), queue_name=rg_queue.name)
 
     logger.debug("Adding priority tasks")
     for _ in range(10):
-        runner.add_task(high_priority_coro(), worker_name=hp_worker.name)
+        runner.add_task(high_priority_coro(), queue_name=hp_queue.name)
 
     await runner.run_until_finished()
     await runner.cleanup()

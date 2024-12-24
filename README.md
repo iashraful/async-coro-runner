@@ -12,6 +12,7 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 
 - **Configurable Concurrency**: Define the number of concurrent tasks when initializing the runner.
 - **Efficient Task Management**: Run multiple tasks concurrently with streamlined execution control.
+- **Worker Queue**: Multiple queue can be configued along with their priority.
 
 ### Planned Enhancements
 
@@ -23,10 +24,10 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 
 ### Installation
 
-To install `coro_runner`, use pip:
+To install `coro-runner`, use pip:
 
 ```bash
-pip install coro_runner
+pip install coro-runner
 ```
 
 ### Full documentation
@@ -107,7 +108,7 @@ The project includes an example API implemented with FastAPI. It demonstrates ho
 1. Run the API server:
 
    ```bash
-   uvicorn main:app --reload
+   uvicorn example:app --reload
    ```
 
 2. Trigger tasks using the endpoint:

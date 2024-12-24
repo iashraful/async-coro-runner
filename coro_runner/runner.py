@@ -1,11 +1,12 @@
 from collections import deque
 import asyncio
+from operator import is_
 from typing import Any, Coroutine
 
-from .utils import prepare_worker_queue
+from .utils import prepare_queue_queue
 from .logging import logger
 
-from .schema import WorkerConfig
+from .schema import QueueConfig
 
 FutureFuncType = Coroutine[Any, Any, Any]
 
@@ -27,27 +28,27 @@ class CoroRunner:
             "score": 0,
             "queue": deque()
         },
-        "Worker1": {
+        "Queue1": {
             "score": 1,
             "queue": deque()
         },
-        "Worker2": {
+        "Queue2": {
             "score": 10,
             "queue": deque()
     }
     """
 
-    def __init__(self, concurrency: int, worker: WorkerConfig | None = None):
-        self._default_worker: str = "default"
+    def __init__(self, concurrency: int, queue_conf: QueueConfig | None = None):
+        self._default_queue: str = "default"
         self._concurrency: int = concurrency
         self._running: set = set()
-        if worker is None:
-            worker = WorkerConfig(workers=[])
-        self._waiting: dict[str, dict[str, deque]] = prepare_worker_queue(
-            worker.workers, default_name=self._default_worker
+        if queue_conf is None:
+            queue_conf = QueueConfig(queues=[])
+        self._waiting: dict[str, dict[str, deque]] = prepare_queue_queue(
+            queue_conf.queues, default_name=self._default_queue
         )
         self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-        self._worker_conf: WorkerConfig = worker
+        self._queue_conf: QueueConfig = queue_conf
 
     @property
     def running_task_count(self) -> int:
@@ -61,30 +62,38 @@ class CoroRunner:
         """
         Check if there is any task in the waiting queue.
         """
-        return any([len(worker["queue"]) for worker in self._waiting.values()])
+        return any([len(queue["queue"]) for queue in self._waiting.values()])
+
+    def is_valid_queue_name(self, queue_name: str) -> bool:
+        """
+        Check if the queue name is valid or not.
+        """
+        return queue_name in self._waiting
 
     def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
         """
         Pop and single task from the waiting queue. If no task is available, return None.
-        It'll return the task based on the worker score. The hightest score worker's task will be returned. 0 means low priority.
+        It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
         """
-        for worker in sorted(
+        for queue in sorted(
             self._waiting.values(), key=lambda x: x["score"], reverse=True
         ):
-            if worker["queue"]:
-                return worker["queue"].popleft()
+            if queue["queue"]:
+                return queue["queue"].popleft()
         return None
 
-    def add_task(self, coro: FutureFuncType, worker_name: str | None = None) -> None:
+    def add_task(self, coro: FutureFuncType, queue_name: str | None = None) -> None:
         """
-        Adding will add the coroutine to the default OR defined worker queue. If the concurrency is full, it'll be added to the waiting queue.
+        Adding will add the coroutine to the default OR defined queue queue. If the concurrency is full, it'll be added to the waiting queue.
         Otherwise, it'll be started immediately.
         """
-        logger.debug(f"Adding {coro.__name__} to worker: {worker_name}")
-        if worker_name is None:
-            worker_name = self._default_worker
+        if queue_name is None:
+            queue_name = self._default_queue
+        if self.is_valid_queue_name(queue_name) is False:
+            raise ValueError(f"Unknown queue name: {queue_name}")
+        logger.debug(f"Adding {coro.__name__} to queue: {queue_name}")
         if len(self._running) >= self._concurrency:
-            self._waiting[worker_name]["queue"].append(coro)
+            self._waiting[queue_name]["queue"].append(coro)
         else:
             self._start_task(coro)
 

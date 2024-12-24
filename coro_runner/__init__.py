@@ -1,10 +1,10 @@
 from .runner import CoroRunner
 from .logging import logger
-from .schema import Worker, WorkerConfig
+from .schema import Queue, QueueConfig
 
 __all__ = [
     "CoroRunner",
     "logger",
-    "Worker",
-    "WorkerConfig",
+    "Queue",
+    "QueueConfig",
 ]
