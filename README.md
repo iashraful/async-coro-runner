@@ -21,6 +21,18 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 
 ## Getting Started
 
+### Installation
+
+To install `coro_runner`, use pip:
+
+```bash
+pip install coro_runner
+```
+
+### Full documentation
+>
+> [Here is the full documentation](https://github.com/iashraful/async-coro-runner/tree/main/coro_runner/docs/docs.md)
+
 ### Quickstart
 
 - Define and schedule tasks:
