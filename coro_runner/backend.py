@@ -1,0 +1,87 @@
+import abc
+from collections import deque
+from typing import Any, Coroutine
+
+from .logging import logger
+
+FutureFuncType = Coroutine[Any, Any, Any]
+
+
+class BaseBackend(abc.ABC):
+    """
+    Base class for all backends. All backends must inherit from this class.
+    Features:
+        - Add a task to memory. O(1)
+        - Get a task from memory. O(1)
+        - List of tasks in memory. O(1)
+        - Task persistence. O(1)
+    Datastructure
+        - Task: Dict[str, Any]
+    """
+
+    def __init__(self) -> None:
+        super(BaseBackend).__init__()
+        self._concurrency = 1
+        self._waiting: dict[str, dict[str, deque]] = dict()
+        self._running: set = set()
+
+    def set_concurrency(self, concurrency: int) -> None:
+        """
+        Set the concurrency of the backend.
+        """
+        self._concurrency = concurrency
+
+    def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
+        """
+        Set the queue configuration.
+        """
+        self._waiting = waitings
+
+    @property
+    def running_task_count(self) -> int:
+        """
+        Get the number of running tasks.
+        """
+        return len(self._running)
+
+    @property
+    def any_waiting_task(self):
+        """
+        Check if there is any task in the waiting queue.
+        """
+        return any([len(queue["queue"]) for queue in self._waiting.values()])
+
+    def is_valid_queue_name(self, queue_name: str) -> bool:
+        """
+        Check if the queue name is valid or not.
+        """
+        return queue_name in self._waiting
+
+    def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
+        """
+        Pop and single task from the waiting queue. If no task is available, return None.
+        It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
+        """
+        for queue in sorted(
+            self._waiting.values(), key=lambda x: x["score"], reverse=True
+        ):
+            if queue["queue"]:
+                return queue["queue"].popleft()
+        return None
+
+    async def cleanup(self):
+        """
+        Cleanup the runner. It'll remove all the running and waiting tasks.
+        """
+        logger.debug("Cleaning up the runner")
+        self._running = set()
+        self._waiting = dict()
+
+
+class InMemoryBackend(BaseBackend):
+    pass
+
+
+class RedisBackend(BaseBackend):
+    def __init__(self) -> None:
+        raise NotImplementedError("Redis backend is not implemented yet.")

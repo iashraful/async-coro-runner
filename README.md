@@ -1,7 +1,6 @@
 # AsyncIO Task Runner (Coro Runner)
 
 [![Test OK!](https://github.com/iashraful/async-coro-runner/actions/workflows/tests-runner.yml/badge.svg?branch=main)](https://github.com/iashraful/async-coro-runner/actions/workflows/tests-runner.yml)
-[![Publich Package](https://github.com/iashraful/async-coro-runner/actions/workflows/packaging.yml/badge.svg?branch=main)](https://github.com/iashraful/async-coro-runner/actions/workflows/packaging.yml)
 [![PyPI](https://img.shields.io/pypi/v/coro-runner?label=Python%20Package)](https://pypi.org/project/coro-runner/)
 
 The **AsyncIO Task Runner** (Coro Runner) is a Python utility designed for managing concurrent asynchronous tasks using the built-in `asyncio` module. It provides an efficient way to execute multiple tasks in a single-threaded environment with customizable concurrency limits.

@@ -3,7 +3,7 @@ from .logging import logger
 from coro_runner.schema import Queue
 
 
-def prepare_queue_queue(
+def prepare_queue(
     queues: list[Queue], default_name: str
 ) -> dict[str, dict[str, deque]]:
     data = {default_name: {"score": 0, "queue": deque()}}

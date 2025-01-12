@@ -5,6 +5,7 @@ from random import random
 import pytest
 
 from coro_runner import CoroRunner
+from coro_runner.backend import InMemoryBackend
 from coro_runner.schema import Queue, QueueConfig
 
 # Log Config
@@ -40,7 +41,9 @@ async def test_coro_runner():
         )
 
     runner = CoroRunner(
-        concurrency=5, queue_conf=QueueConfig(queues=[rg_queue, hp_queue])
+        concurrency=5,
+        queue_conf=QueueConfig(queues=[rg_queue, hp_queue]),
+        backend=InMemoryBackend(),
     )
     logger.debug("Adding regular tasks")
     for _ in range(10):
@@ -52,4 +55,4 @@ async def test_coro_runner():
 
     await runner.run_until_finished()
     await runner.cleanup()
-    assert runner.running_task_count == 0
+    assert runner._backend.running_task_count == 0

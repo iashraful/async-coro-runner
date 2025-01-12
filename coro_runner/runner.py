@@ -1,9 +1,9 @@
-from collections import deque
 import asyncio
-from operator import is_
 from typing import Any, Coroutine
 
-from .utils import prepare_queue_queue
+from .backend import BaseBackend, InMemoryBackend
+
+from .utils import prepare_queue
 from .logging import logger
 
 from .schema import QueueConfig
@@ -38,49 +38,22 @@ class CoroRunner:
     }
     """
 
-    def __init__(self, concurrency: int, queue_conf: QueueConfig | None = None):
+    def __init__(
+        self,
+        concurrency: int,
+        queue_conf: QueueConfig | None = None,
+        backend: BaseBackend = InMemoryBackend(),
+    ) -> None:
         self._default_queue: str = "default"
-        self._concurrency: int = concurrency
-        self._running: set = set()
         if queue_conf is None:
             queue_conf = QueueConfig(queues=[])
-        self._waiting: dict[str, dict[str, deque]] = prepare_queue_queue(
-            queue_conf.queues, default_name=self._default_queue
+        self._backend = backend
+        # Update the backend
+        self._backend.set_concurrency(concurrency)
+        self._backend.set_waiting(
+            waitings=prepare_queue(queue_conf.queues, default_name=self._default_queue)
         )
         self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-        self._queue_conf: QueueConfig = queue_conf
-
-    @property
-    def running_task_count(self) -> int:
-        """
-        Get the number of running tasks.
-        """
-        return len(self._running)
-
-    @property
-    def any_waiting_task(self):
-        """
-        Check if there is any task in the waiting queue.
-        """
-        return any([len(queue["queue"]) for queue in self._waiting.values()])
-
-    def is_valid_queue_name(self, queue_name: str) -> bool:
-        """
-        Check if the queue name is valid or not.
-        """
-        return queue_name in self._waiting
-
-    def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
-        """
-        Pop and single task from the waiting queue. If no task is available, return None.
-        It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
-        """
-        for queue in sorted(
-            self._waiting.values(), key=lambda x: x["score"], reverse=True
-        ):
-            if queue["queue"]:
-                return queue["queue"].popleft()
-        return None
 
     def add_task(self, coro: FutureFuncType, queue_name: str | None = None) -> None:
         """
@@ -89,11 +62,11 @@ class CoroRunner:
         """
         if queue_name is None:
             queue_name = self._default_queue
-        if self.is_valid_queue_name(queue_name) is False:
+        if self._backend.is_valid_queue_name(queue_name) is False:
             raise ValueError(f"Unknown queue name: {queue_name}")
         logger.debug(f"Adding {coro.__name__} to queue: {queue_name}")
-        if len(self._running) >= self._concurrency:
-            self._waiting[queue_name]["queue"].append(coro)
+        if len(self._backend._running) >= self._backend._concurrency:
+            self._backend._waiting[queue_name]["queue"].append(coro)
         else:
             self._start_task(coro)
 
@@ -101,7 +74,7 @@ class CoroRunner:
         """
         Stat the task and add it to the running set.
         """
-        self._running.add(coro)
+        self._backend._running.add(coro)
         asyncio.create_task(self._task(coro))
         logger.debug(f"Started task: {coro.__name__}")
 
@@ -113,9 +86,11 @@ class CoroRunner:
         try:
             return await coro
         finally:
-            self._running.remove(coro)
-            if self.any_waiting_task:
-                coro2: FutureFuncType | None = self.pop_task_from_waiting_queue()
+            self._backend._running.remove(coro)
+            if self._backend.any_waiting_task:
+                coro2: FutureFuncType | None = (
+                    self._backend.pop_task_from_waiting_queue()
+                )
                 if coro2:
                     self._start_task(coro2)
 
@@ -123,20 +98,21 @@ class CoroRunner:
         """
         This is to keep the runner alive until manual exit. It'll keep running until the running_task_count is -1.
         """
-        while self.running_task_count != -1:
+        while self._backend.running_task_count != -1:
             await asyncio.sleep(0.1)
 
     async def run_until_finished(self):
         """
         This is to keep the runner alive until all the tasks are finished.
         """
-        while self.running_task_count > 0:
+        while self._backend.running_task_count > 0:
             await asyncio.sleep(0.1)
 
     async def cleanup(self):
         """
         Cleanup the runner. It'll remove all the running and waiting tasks.
         """
-        logger.debug("Cleaning up the runner")
-        self._running = set()
-        self._waiting = dict()
+        # TODO: Keep the persistant tasks during clean up
+        await self._backend.cleanup()
+
+        logger.debug("Runner cleaned up along with backend.")
