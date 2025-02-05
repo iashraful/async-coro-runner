@@ -1,0 +1,17 @@
+services:
+  api:
+    restart: always
+    build: .
+    ports:
+      - "7001:8080"
+    volumes:
+      - .:/code
+    environment:
+      DEBUG: "true"
+    command: fastapi dev example.py --host 0.0.0.0 --port 8080
+
+  redis:
+    image: redis:6.2.4-alpine
+    ports:
+      - "6388:6379"
+    command: redis-server

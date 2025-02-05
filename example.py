@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
-app = FastAPI(title="Coro Runner Exampleåå")
+app = FastAPI(title="Coro Runner Example")
 runner = CoroRunner(
     concurrency=25,
     queue_conf=QueueConfig(

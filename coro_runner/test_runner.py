@@ -5,8 +5,8 @@ from random import random
 import pytest
 
 from coro_runner import CoroRunner
-from coro_runner.backend import InMemoryBackend
-from coro_runner.schema import Queue, QueueConfig
+from coro_runner.backend import InMemoryBackend, RedisBackend
+from coro_runner.schema import Queue, QueueConfig, RedisConfig
 
 # Log Config
 logger = logging.getLogger(__name__)
@@ -18,32 +18,34 @@ rg_queue = Queue(name="Regular", score=1)
 hp_queue = Queue(name="HighPriority", score=10)
 
 
+async def regular_coro():
+    current_task: asyncio.Task | None = asyncio.current_task()
+    logger.info(
+        f"Regular task started: {current_task.get_name() if current_task else 'No Name'}",
+    )
+    await asyncio.sleep(random() * 2)
+    logger.info(
+        f"Regular task ended: {current_task.get_name() if current_task else 'No name'}"
+    )
+
+
+async def high_priority_coro():
+    current_task: asyncio.Task | None = asyncio.current_task()
+    logger.info(
+        f"Priority task started: {current_task.get_name() if current_task else 'No name'}"
+    )
+    await asyncio.sleep(random() * 2)
+    logger.info(
+        f"Priority task ended: {current_task.get_name() if current_task else 'No name'}"
+    )
+
+
 @pytest.mark.asyncio
 async def test_coro_runner():
-    async def regular_coro():
-        current_task: asyncio.Task | None = asyncio.current_task()
-        logger.info(
-            f"Regular task started: {current_task.get_name() if current_task else 'No Name'}",
-        )
-        await asyncio.sleep(random() * 2)
-        logger.info(
-            f"Regular task ended: {current_task.get_name() if current_task else 'No name'}"
-        )
-
-    async def high_priority_coro():
-        current_task: asyncio.Task | None = asyncio.current_task()
-        logger.info(
-            f"Priority task started: {current_task.get_name() if current_task else 'No name'}"
-        )
-        await asyncio.sleep(random() * 2)
-        logger.info(
-            f"Priority task ended: {current_task.get_name() if current_task else 'No name'}"
-        )
-
     runner = CoroRunner(
         concurrency=5,
         queue_conf=QueueConfig(queues=[rg_queue, hp_queue]),
-        backend=InMemoryBackend(),
+        backend=RedisBackend(conf=RedisConfig(host="localhost", port=6379, db=0)),
     )
     logger.debug("Adding regular tasks")
     for _ in range(10):
