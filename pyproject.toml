@@ -8,7 +8,7 @@ version = "0.1.2"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-redis = "^5.2.1"
+redis = {extras = ["hiredis"], version = "^5.2.1"}
 
 [tool.poetry.group.dev.dependencies]
 fastapi = {extras = ["standard"], version = "^0.115.2"}

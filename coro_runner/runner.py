@@ -66,7 +66,7 @@ class CoroRunner:
             raise ValueError(f"Unknown queue name: {queue_name}")
         logger.debug(f"Adding {coro.__name__} to queue: {queue_name}")
         if len(self._backend._running) >= self._backend._concurrency:
-            self._backend._waiting[queue_name]["queue"].append(coro)
+            self._backend.add_task_to_waiting_queue(queue_name, coro)
         else:
             self._start_task(coro)
 
@@ -74,7 +74,7 @@ class CoroRunner:
         """
         Stat the task and add it to the running set.
         """
-        self._backend._running.add(coro)
+        self._backend.add_task_to_running(coro)
         asyncio.create_task(self._task(coro))
         logger.debug(f"Started task: {coro.__name__}")
 
@@ -86,7 +86,7 @@ class CoroRunner:
         try:
             return await coro
         finally:
-            self._backend._running.remove(coro)
+            self._backend.remove_task_from_running(coro)
             if self._backend.any_waiting_task:
                 coro2: FutureFuncType | None = (
                     self._backend.pop_task_from_waiting_queue()

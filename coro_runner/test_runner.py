@@ -10,7 +10,7 @@ from coro_runner.schema import Queue, QueueConfig, RedisConfig
 
 # Log Config
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
 # Defining the queue configuration
@@ -41,18 +41,49 @@ async def high_priority_coro():
 
 
 @pytest.mark.asyncio
-async def test_coro_runner():
+async def test_in_memory_coro_runner():
+    logger.debug(f"Testing InMemoryBackend from: {__name__}")
     runner = CoroRunner(
-        concurrency=5,
+        concurrency=2,
+        backend=InMemoryBackend(),
+    )
+    for _ in range(5):
+        runner.add_task(regular_coro())
+
+    await runner.run_until_finished()
+    await runner.cleanup()
+    assert runner._backend.running_task_count == 0
+
+
+@pytest.mark.asyncio
+async def test_redis_backend_coro_runner():
+    logger.debug(f"Testing RedisBackend from: {__name__}")
+    runner = CoroRunner(
+        concurrency=2,
+        backend=RedisBackend(conf=RedisConfig(host="localhost", port=6388, db=0)),
+    )
+    for _ in range(5):
+        runner.add_task(regular_coro())
+
+    await runner.run_until_finished()
+    await runner.cleanup()
+    assert runner._backend.running_task_count == 0
+
+
+@pytest.mark.asyncio
+async def test_priority_check_coroutines():
+    logger.info(f"Testing Queue Mechanism from: {__name__}")
+    runner = CoroRunner(
+        concurrency=2,
         queue_conf=QueueConfig(queues=[rg_queue, hp_queue]),
         backend=InMemoryBackend(),
     )
     logger.debug("Adding regular tasks")
-    for _ in range(10):
+    for _ in range(5):
         runner.add_task(regular_coro(), queue_name=rg_queue.name)
 
     logger.debug("Adding priority tasks")
-    for _ in range(10):
+    for _ in range(5):
         runner.add_task(high_priority_coro(), queue_name=hp_queue.name)
 
     await runner.run_until_finished()

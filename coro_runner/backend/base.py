@@ -20,21 +20,80 @@ class BaseBackend(abc.ABC):
     def __init__(self) -> None:
         super(BaseBackend).__init__()
         self._has_persistence: bool = False
-        self._concurrency: int = 1
-        self._waiting: dict[str, dict[str, deque]] = dict()
-        self._running: set = set()
+
+        # These are the keys used in the data dictionary.
+        self.__dk_concurrency = "concurrency"
+        self.__dk__waiting = "waiting"
+        self.__dk__running = "running"
+        # This is the data dictionary.
+        self.__data = {
+            self.__dk_concurrency: 1,
+            self.__dk__waiting: dict(),
+            self.__dk__running: set(),
+        }
 
     def set_concurrency(self, concurrency: int) -> None:
         """
         Set the concurrency of the backend.
         """
-        self._concurrency = concurrency
+        self.__data[self.__dk_concurrency] = concurrency
 
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
         """
         Set the queue configuration.
         """
-        self._waiting = waitings
+        self.__data[self.__dk__waiting] = waitings
+
+    def add_task_to_waiting_queue(self, queue_name: str, task: FutureFuncType) -> None:
+        """
+        Add a task to the waiting queue.
+        """
+        self._waiting[queue_name]["queue"].append(task)
+
+    def add_task_to_running(self, task: FutureFuncType) -> None:
+        """
+        Add a task to the running set.
+        """
+        self._running.add(task)
+
+    def remove_task_from_running(self, task: FutureFuncType) -> None:
+        """
+        Remove a task from the running set.
+        """
+        self._running.remove(task)
+
+    def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
+        """
+        Pop and single task from the waiting queue. If no task is available, return None.
+        It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
+        """
+        for queue in sorted(
+            self._waiting.values(), key=lambda x: x["score"], reverse=True
+        ):
+            if queue["queue"]:
+                return queue["queue"].popleft()
+        return None
+
+    @property
+    def _concurrency(self) -> int:
+        """
+        Get the concurrency of the backend.
+        """
+        return self.__data[self.__dk_concurrency]
+
+    @property
+    def _waiting(self) -> dict[str, dict[str, deque]]:
+        """
+        Get the queue configuration.
+        """
+        return self.__data[self.__dk__waiting]
+
+    @property
+    def _running(self) -> set:
+        """
+        Get the running tasks.
+        """
+        return self.__data[self.__dk__running]
 
     @property
     def running_task_count(self) -> int:
@@ -56,22 +115,13 @@ class BaseBackend(abc.ABC):
         """
         return queue_name in self._waiting
 
-    def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
-        """
-        Pop and single task from the waiting queue. If no task is available, return None.
-        It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
-        """
-        for queue in sorted(
-            self._waiting.values(), key=lambda x: x["score"], reverse=True
-        ):
-            if queue["queue"]:
-                return queue["queue"].popleft()
-        return None
-
     async def cleanup(self):
         """
         Cleanup the runner. It'll remove all the running and waiting tasks.
         """
         logger.debug("Cleaning up the runner")
-        self._running = set()
-        self._waiting = dict()
+        self.__data = {
+            self.__dk_concurrency: 1,
+            self.__dk__waiting: dict(),
+            self.__dk__running: set(),
+        }
