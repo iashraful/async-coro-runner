@@ -45,7 +45,7 @@ async def test_coro_runner():
     runner = CoroRunner(
         concurrency=5,
         queue_conf=QueueConfig(queues=[rg_queue, hp_queue]),
-        backend=RedisBackend(conf=RedisConfig(host="localhost", port=6379, db=0)),
+        backend=InMemoryBackend(),
     )
     logger.debug("Adding regular tasks")
     for _ in range(10):
