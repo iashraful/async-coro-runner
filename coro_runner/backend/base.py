@@ -1,8 +1,9 @@
 import abc
 from collections import deque
+from typing import Any
 
 from ..logging import logger
-from .types import FutureFuncType
+from ..types import FutureFuncType
 
 
 class BaseBackend(abc.ABC):
@@ -22,33 +23,41 @@ class BaseBackend(abc.ABC):
         self._has_persistence: bool = False
 
         # These are the keys used in the data dictionary.
-        self.__dk_concurrency = "concurrency"
-        self.__dk__waiting = "waiting"
-        self.__dk__running = "running"
+        self._dk__concurrency = "concurrency"
+        self._dk__waiting = "waiting"
+        self._dk__running = "running"
         # This is the data dictionary.
         self.__data = {
-            self.__dk_concurrency: 1,
-            self.__dk__waiting: dict(),
-            self.__dk__running: set(),
+            self._dk__concurrency: 1,
+            self._dk__waiting: dict(),
+            self._dk__running: set(),
         }
 
     def set_concurrency(self, concurrency: int) -> None:
         """
         Set the concurrency of the backend.
         """
-        self.__data[self.__dk_concurrency] = concurrency
+        self.__data[self._dk__concurrency] = concurrency
 
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
         """
         Set the queue configuration.
         """
-        self.__data[self.__dk__waiting] = waitings
+        self.__data[self._dk__waiting] = waitings
 
-    def add_task_to_waiting_queue(self, queue_name: str, task: FutureFuncType) -> None:
+    def add_task_to_waiting_queue(
+        self, queue_name: str, task: FutureFuncType, args: list = [], kwargs: dict = {}
+    ) -> None:
         """
         Add a task to the waiting queue.
         """
-        self._waiting[queue_name]["queue"].append(task)
+        self._waiting[queue_name]["queue"].append(
+            {
+                "fn": task,
+                "args": args,
+                "kwargs": kwargs,
+            }
+        )
 
     def add_task_to_running(self, task: FutureFuncType) -> None:
         """
@@ -62,7 +71,7 @@ class BaseBackend(abc.ABC):
         """
         self._running.remove(task)
 
-    def pop_task_from_waiting_queue(self) -> FutureFuncType | None:
+    def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
         Pop and single task from the waiting queue. If no task is available, return None.
         It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
@@ -79,21 +88,21 @@ class BaseBackend(abc.ABC):
         """
         Get the concurrency of the backend.
         """
-        return self.__data[self.__dk_concurrency]
+        return self.__data[self._dk__concurrency]
 
     @property
     def _waiting(self) -> dict[str, dict[str, deque]]:
         """
         Get the queue configuration.
         """
-        return self.__data[self.__dk__waiting]
+        return self.__data[self._dk__waiting]
 
     @property
     def _running(self) -> set:
         """
         Get the running tasks.
         """
-        return self.__data[self.__dk__running]
+        return self.__data[self._dk__running]
 
     @property
     def running_task_count(self) -> int:
@@ -121,7 +130,7 @@ class BaseBackend(abc.ABC):
         """
         logger.debug("Cleaning up the runner")
         self.__data = {
-            self.__dk_concurrency: 1,
-            self.__dk__waiting: dict(),
-            self.__dk__running: set(),
+            self._dk__concurrency: 1,
+            self._dk__waiting: dict(),
+            self._dk__running: set(),
         }

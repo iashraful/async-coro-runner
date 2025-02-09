@@ -1,6 +1,11 @@
+from base64 import b64decode, b64encode
 from collections import deque
 import json
-from redis import Redis
+import pickle
+from typing import Any
+from redis import ConnectionPool, Redis
+
+from coro_runner.types import FutureFuncType
 
 from .base import BaseBackend
 
@@ -14,12 +19,13 @@ class RedisBackend(BaseBackend):
         self._cache_prefix = "coro_runner"
 
     def __connect(self, conf: RedisConfig) -> Redis:
-        return Redis(
+        pool = ConnectionPool(
             host=conf.host,
             port=conf.port,
             db=conf.db,
             password=conf.password,
         )
+        return Redis(connection_pool=pool)
 
     def __close(self) -> None:
         self.r_client.close()
@@ -31,7 +37,58 @@ class RedisBackend(BaseBackend):
         self.r_client.set(self.get_cache_key("concurrency"), concurrency)
 
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
-        self.r_client.set(self.get_cache_key("waiting"), json.dumps(waitings))
+        jsonable_data = dict()
+        for key, value in waitings.items():
+            jsonable_data[key] = {
+                "score": value["score"],
+                "queue": b64encode(pickle.dumps(value["queue"])).decode("ascii"),
+            }
+        self.r_client.set(self.get_cache_key("waiting"), json.dumps(jsonable_data))
+
+    def add_task_to_waiting_queue(
+        self, queue_name: str, task: FutureFuncType, args: list = [], kwargs: dict = {}
+    ) -> None:
+        data: dict = json.loads(
+            self.r_client.get(self.get_cache_key(self._dk__waiting))
+        )
+        # Append is same for deque and list. We can use it directly.
+        _data = pickle.loads(b64decode(data[queue_name]["queue"]))
+        _data.append(
+            {
+                "fn": task,
+                "args": args,
+                "kwargs": kwargs,
+            }
+        )
+        data[queue_name]["queue"] = b64encode(pickle.dumps(_data)).decode("ascii")
+        self.r_client.set(self.get_cache_key(self._dk__waiting), json.dumps(data))
+
+    def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
+        current_waitings = self._waiting
+        for q_name, queue in sorted(
+            current_waitings.items(), key=lambda x: x[1]["score"], reverse=True
+        ):
+            if queue["queue"]:
+                q = queue["queue"].popleft()
+
+                # Set the new queue
+                current_waitings[q_name] = queue
+                self.set_waiting(current_waitings)
+                return q
+        return None
+
+    @property
+    def _concurrency(self) -> int:
+        return int(self.r_client.get(self.get_cache_key(self._dk__concurrency)))
+
+    @property
+    def _waiting(self) -> dict[str, dict[str, deque]]:
+        data: dict = json.loads(
+            self.r_client.get(self.get_cache_key(self._dk__waiting))
+        )
+        for key, value in data.items():
+            data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
+        return data
 
     def cleanup(self):
         self.__close()

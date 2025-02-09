@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Coroutine
+from typing import Any
 
 from .backend import BaseBackend, InMemoryBackend
 
@@ -7,8 +7,7 @@ from .utils import prepare_queue
 from .logging import logger
 
 from .schema import QueueConfig
-
-FutureFuncType = Coroutine[Any, Any, Any]
+from .types import FutureFuncType
 
 
 class CoroRunner:
@@ -55,7 +54,13 @@ class CoroRunner:
         )
         self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
-    def add_task(self, coro: FutureFuncType, queue_name: str | None = None) -> None:
+    def add_task(
+        self,
+        coro: FutureFuncType,
+        args: list = [],
+        kwargs: dict = {},
+        queue_name: str | None = None,
+    ) -> None:
         """
         Adding will add the coroutine to the default OR defined queue queue. If the concurrency is full, it'll be added to the waiting queue.
         Otherwise, it'll be started immediately.
@@ -66,9 +71,9 @@ class CoroRunner:
             raise ValueError(f"Unknown queue name: {queue_name}")
         logger.debug(f"Adding {coro.__name__} to queue: {queue_name}")
         if len(self._backend._running) >= self._backend._concurrency:
-            self._backend.add_task_to_waiting_queue(queue_name, coro)
+            self._backend.add_task_to_waiting_queue(queue_name, coro, args, kwargs)
         else:
-            self._start_task(coro)
+            self._start_task(coro(*args, **kwargs))
 
     def _start_task(self, coro: FutureFuncType):
         """
@@ -88,11 +93,12 @@ class CoroRunner:
         finally:
             self._backend.remove_task_from_running(coro)
             if self._backend.any_waiting_task:
-                coro2: FutureFuncType | None = (
+                coro2_data: dict[str, FutureFuncType | Any] | None = (
                     self._backend.pop_task_from_waiting_queue()
                 )
-                if coro2:
-                    self._start_task(coro2)
+                if coro2_data:
+                    __fn = coro2_data["fn"]
+                    self._start_task(__fn(*coro2_data["args"], **coro2_data["kwargs"]))
 
     async def run_until_exit(self):
         """

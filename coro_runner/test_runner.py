@@ -48,7 +48,7 @@ async def test_in_memory_coro_runner():
         backend=InMemoryBackend(),
     )
     for _ in range(5):
-        runner.add_task(regular_coro())
+        runner.add_task(regular_coro)
 
     await runner.run_until_finished()
     await runner.cleanup()
@@ -63,7 +63,7 @@ async def test_redis_backend_coro_runner():
         backend=RedisBackend(conf=RedisConfig(host="localhost", port=6388, db=0)),
     )
     for _ in range(5):
-        runner.add_task(regular_coro())
+        runner.add_task(regular_coro)
 
     await runner.run_until_finished()
     await runner.cleanup()
@@ -80,11 +80,11 @@ async def test_priority_check_coroutines():
     )
     logger.debug("Adding regular tasks")
     for _ in range(5):
-        runner.add_task(regular_coro(), queue_name=rg_queue.name)
+        runner.add_task(regular_coro, queue_name=rg_queue.name)
 
     logger.debug("Adding priority tasks")
     for _ in range(5):
-        runner.add_task(high_priority_coro(), queue_name=hp_queue.name)
+        runner.add_task(high_priority_coro, queue_name=hp_queue.name)
 
     await runner.run_until_finished()
     await runner.cleanup()
