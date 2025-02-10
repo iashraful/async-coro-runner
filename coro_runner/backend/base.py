@@ -124,7 +124,7 @@ class BaseBackend(abc.ABC):
         """
         return queue_name in self._waiting
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """
         Cleanup the runner. It'll remove all the running and waiting tasks.
         """

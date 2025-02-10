@@ -37,6 +37,11 @@ class RedisBackend(BaseBackend):
         self.r_client.set(self.get_cache_key("concurrency"), concurrency)
 
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
+        """
+        Set the waiting queue in the cache.
+        We are going to store the waiting queue as pickled data in the cache. Because we have functions in the queue. Without
+        the pickling, we can't store the functions in the cache.
+        """
         jsonable_data = dict()
         for key, value in waitings.items():
             jsonable_data[key] = {
@@ -48,6 +53,9 @@ class RedisBackend(BaseBackend):
     def add_task_to_waiting_queue(
         self, queue_name: str, task: FutureFuncType, args: list = [], kwargs: dict = {}
     ) -> None:
+        """ "
+        Adding a task to the waiting queue. Once again read from cache append and pickle dump again.
+        """
         data: dict = json.loads(
             self.r_client.get(self.get_cache_key(self._dk__waiting))
         )
@@ -64,6 +72,9 @@ class RedisBackend(BaseBackend):
         self.r_client.set(self.get_cache_key(self._dk__waiting), json.dumps(data))
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
+        """
+        Pop Left is the hard task sometimes because we need to pickle and unpickle the data along with the queue score.
+        """
         current_waitings = self._waiting
         for q_name, queue in sorted(
             current_waitings.items(), key=lambda x: x[1]["score"], reverse=True
@@ -83,6 +94,9 @@ class RedisBackend(BaseBackend):
 
     @property
     def _waiting(self) -> dict[str, dict[str, deque]]:
+        """
+        Get the waiting tasks from the cache. We are storing the queue as pickled data in the cache. We need to unpickle it.
+        """
         data: dict = json.loads(
             self.r_client.get(self.get_cache_key(self._dk__waiting))
         )
@@ -90,6 +104,7 @@ class RedisBackend(BaseBackend):
             data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
         return data
 
-    def cleanup(self):
+    async def cleanup(self):
+        self.r_client.delete(self.get_cache_key(self._dk__concurrency))
+        self.r_client.delete(self.get_cache_key(self._dk__waiting))
         self.__close()
-        return super().cleanup()
