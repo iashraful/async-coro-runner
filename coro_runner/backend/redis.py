@@ -4,6 +4,7 @@ import json
 import pickle
 from typing import Any
 from redis import ConnectionPool, Redis
+from ..logging import logger
 
 from coro_runner.types import FutureFuncType
 
@@ -35,6 +36,21 @@ class RedisBackend(BaseBackend):
 
     def set_concurrency(self, concurrency: int) -> None:
         self.r_client.set(self.get_cache_key("concurrency"), concurrency)
+
+    def __get_existing_queue(self) -> dict[str, dict[str, deque]]:
+        try:
+            data: dict = json.loads(
+                self.r_client.get(self.get_cache_key(self._dk__waiting))
+            )
+            for key, value in data.items():
+                data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
+            return data
+        except Exception:
+            logger.error("Error parsing the queue. Probably no queue.")
+            import traceback
+
+            print(traceback.format_exc())
+            return {}
 
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
         """

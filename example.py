@@ -6,7 +6,9 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
 from coro_runner import Queue, QueueConfig
+from coro_runner.backend.redis import RedisBackend
 from coro_runner.runner import CoroRunner
+from coro_runner.schema import RedisConfig
 
 # Log Config
 logger = logging.getLogger(__name__)
@@ -15,7 +17,8 @@ logger.addHandler(logging.StreamHandler())
 
 app = FastAPI(title="Coro Runner Example")
 runner = CoroRunner(
-    concurrency=25,
+    concurrency=5,
+    backend=RedisBackend(conf=RedisConfig(host="redis", port=6379, db=0)),
     queue_conf=QueueConfig(
         queues=[
             Queue(name="send_mail", score=2),
@@ -51,14 +54,14 @@ async def dummy_email_send():
 @app.get("/random-delay")
 async def fire_random_delay(count: int = 25):
     for _ in range(count):
-        runner.add_task(rand_delay(), queue_name="low_priority")
+        runner.add_task(rand_delay, queue_name="low_priority")
     return {"Task": "Done"}
 
 
 @app.get("/dummy-send-email")
 async def fire_send_email(count: int = 25):
     for _ in range(count):
-        runner.add_task(dummy_email_send(), queue_name="send_mail")
+        runner.add_task(dummy_email_send, queue_name="send_mail")
     return {"Task": "Done"}
 
 

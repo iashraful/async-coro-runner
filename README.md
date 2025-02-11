@@ -41,9 +41,9 @@ pip install coro-runner
   from coro_runner import CoroRunner
 
 
-  runner = CoroRunner(concurrency=25)
+  runner = CoroRunner(concurrency=10)
   # Add your tasks from anywhere b       
-  runner.add_task(your_task()) # your_task must be a coroutine or future like object
+  runner.add_task(your_task, args=[1,2,3], kwargs={"test": "OK!"}) # your_task must be a async function
   ```
 
 - Task lifecycle management: (On app start and end you must run the runner. Don't worry it'll run under same process.)

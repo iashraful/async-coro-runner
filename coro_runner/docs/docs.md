@@ -49,3 +49,16 @@ runner.add_task(rand_delay(), queue_name="async_task")
 ```
 
 **Note: The higher value of score menas it has high priority.**
+
+### Using with RedisBackend
+
+Currently we have two backend options. They are, InMemoryBackend and RedisBackend. By default InMemoryBackend is activated. For Redis backend see the following example,
+
+```python
+runner = CoroRunner(
+    concurrency=5,
+    backend=RedisBackend(conf=RedisConfig(host="192.168.10.100", port=6379, db=0)),
+)
+```
+
+**If you have auth in redis? then, you can send password on RedisConfig**
