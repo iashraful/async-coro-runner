@@ -40,8 +40,9 @@ async def rand_delay():
     )
 
 
-async def dummy_email_send():
+async def dummy_email_send(recipient_emails: list[str]):
     current_task: asyncio.Task | None = asyncio.current_task()
+    logger.info("emails: %s", recipient_emails)
     logger.info(
         f"Dummy Send Email started: {current_task.get_name() if current_task else 'No Name'}",
     )
@@ -58,10 +59,14 @@ async def fire_random_delay(count: int = 25):
     return {"Task": "Done"}
 
 
-@app.get("/dummy-send-email")
-async def fire_send_email(count: int = 25):
+@app.post("/dummy-send-email")
+async def fire_send_email(count: int = 25, emails: list[str] = []):
     for _ in range(count):
-        runner.add_task(dummy_email_send, queue_name="send_mail")
+        runner.add_task(
+            dummy_email_send,
+            queue_name="send_mail",
+            kwargs={"recipient_emails": emails},
+        )
     return {"Task": "Done"}
 
 

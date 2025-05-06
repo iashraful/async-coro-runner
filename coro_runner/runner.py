@@ -64,6 +64,9 @@ class CoroRunner:
         """
         Adding will add the coroutine to the default OR defined queue queue. If the concurrency is full, it'll be added to the waiting queue.
         Otherwise, it'll be started immediately.
+        :param coro: The coroutine to be run.
+        :param args: The arguments will be passed the function directly.
+        :param kwargs: The arguments will be passed the function directly.
         """
         if queue_name is None:
             queue_name = self._default_queue
