@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from random import random
 
 import pytest
@@ -7,6 +8,10 @@ import pytest
 from coro_runner import CoroRunner
 from coro_runner.backend import InMemoryBackend, RedisBackend
 from coro_runner.schema import Queue, QueueConfig, RedisConfig
+
+REDIS_HOST: str = os.environ.get("REDIS_HOST", "localhost")
+REDIS_PORT: int = int(os.environ.get("REDIS_PORT", 6379))
+REDIS_DB: int = int(os.environ.get("REDIS_DB", 0))
 
 # Log Config
 logger = logging.getLogger(__name__)
@@ -60,7 +65,9 @@ async def test_redis_backend_coro_runner():
     logger.debug(f"Testing RedisBackend from: {__name__}")
     runner = CoroRunner(
         concurrency=2,
-        backend=RedisBackend(conf=RedisConfig(host="localhost", port=6388, db=0)),
+        backend=RedisBackend(
+            conf=RedisConfig(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+        ),
     )
     for _ in range(5):
         runner.add_task(regular_coro)
