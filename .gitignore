@@ -1,7 +1,9 @@
 .idea
 .DS_Store
+*.egg-info
 
 .pytest_cache
 *.pyc
 __pycache__/*
 dist/*
+.pypi_token
