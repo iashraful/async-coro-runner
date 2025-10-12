@@ -10,7 +10,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "fastapi>=0.117.1",
+    "fastapi[standard]>=0.117.1",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
 ]
