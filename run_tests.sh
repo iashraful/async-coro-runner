@@ -20,4 +20,4 @@ echo "  REDIS_PORT=${REDIS_PORT}"
 echo "  REDIS_DB=${REDIS_DB}"
 echo "  REDIS_URL=${REDIS_URL}"
 
-exec pytest -s "$@"
+exec uv run pytest -s "$@"

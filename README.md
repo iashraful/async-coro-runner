@@ -46,15 +46,7 @@ pip install coro-runner
   runner.add_task(your_task, args=[1,2,3], kwargs={"test": "OK!"}) # your_task must be a async function
   ```
 
-- Task lifecycle management: (On app start and end you must run the runner. Don't worry it'll run under same process.)
-
-  ```python
-  async def startup():
-      await runner.run_until_exit()
-  
-  async def shutdown():
-      await runner.cleanup()
-  ```
+  **Declare the runner once and call from everywhere.**
 
 ### Prerequisites
 

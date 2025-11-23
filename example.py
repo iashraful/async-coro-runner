@@ -3,7 +3,6 @@ import logging
 from random import random
 
 from fastapi import FastAPI
-from fastapi.concurrency import asynccontextmanager
 
 from coro_runner import Queue, QueueConfig
 from coro_runner.backend.redis import RedisBackend
@@ -68,18 +67,3 @@ async def fire_send_email(count: int = 25, emails: list[str] = []):
             kwargs={"recipient_emails": emails},
         )
     return {"Task": "Done"}
-
-
-async def startup():
-    await runner.run_until_exit()
-
-
-async def shutdown():
-    await runner.cleanup()
-
-
-@asynccontextmanager
-async def app_lifespan(app: FastAPI):
-    await startup()
-    yield
-    await shutdown()

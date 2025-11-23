@@ -106,6 +106,14 @@ class CoroRunner:
     async def run_until_exit(self):
         """
         This is to keep the runner alive until manual exit. It'll keep running until the running_task_count is -1.
+
+        You just need to call this method once during the app startup,
+        if your app is not running on eventloop. Otherwise, it'll block the eventloop.
+        So be careful while using it.
+
+        To clear the confusion, you can look at the test_runner.py file and example.py files.
+        I have used this method in test_runner.py but not in the example.py file.
+        Because the example.py file is running on FastAPI example app which is already running on eventloop.
         """
         while self._backend.running_task_count != -1:
             await asyncio.sleep(0.1)
@@ -113,6 +121,14 @@ class CoroRunner:
     async def run_until_finished(self):
         """
         This is to keep the runner alive until all the tasks are finished.
+
+        You just need to call this method once during the app startup,
+        if your app is not running on eventloop. Otherwise, it'll block the eventloop.
+        So be careful while using it.
+
+        To clear the confusion, you can look at the test_runner.py file and example.py files.
+        I have used this method in test_runner.py but not in the example.py file.
+        Because the example.py file is running on FastAPI example app which is already running on eventloop.
         """
         while self._backend.running_task_count > 0:
             await asyncio.sleep(0.1)
