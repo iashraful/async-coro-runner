@@ -3,6 +3,7 @@ import logging
 from random import random
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from coro_runner import Queue, QueueConfig
 from coro_runner.backend.redis import RedisBackend
@@ -80,3 +81,8 @@ async def fire_send_email(count: int = 25, emails: list[str] = []):
 @app.get("/report")
 async def get_report():
     return runner.get_report()
+
+
+@app.get("/stats")
+async def get_worker_stats():
+    return FileResponse("example/stats.html")

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worker Stats</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+      .three-col {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .card {
+        background: white;
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+      .card-title {
+        font-size: 14px;
+        color: #777;
+        margin-bottom: 4px;
+      }
+      .card-value {
+        font-size: 28px;
+        font-weight: bold;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        padding: 8px 10px;
+        background: #fafafa;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 14px;
+        border: 1px solid #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Worker Stats</h1>
+
+    <div class="grid three-col" id="top-stats"></div>
+
+    <div class="card">
+      <h2>Running Tasks</h2>
+      <ul id="running-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Waiting Tasks</h2>
+      <ul id="waiting-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Completed Tasks</h2>
+      <ul id="completed-list"></ul>
+    </div>
+
+    <script>
+      async function loadData() {
+        try {
+          const res = await fetch("/report");
+          const data = await res.json();
+
+          // Top stats
+          document.getElementById("top-stats").innerHTML = "";
+          const statItems = [
+            { title: "Concurrency", value: data.concurrency },
+            { title: "Running Tasks", value: data.running_task_count },
+            { title: "Waiting Tasks", value: data.waiting_task_count },
+          ];
+          statItems.forEach((s) => {
+            const c = document.createElement("div");
+            c.className = "card";
+            c.innerHTML = `<div class='card-title'>${s.title}</div><div class='card-value'>${s.value}</div>`;
+            document.getElementById("top-stats").appendChild(c);
+          });
+
+          // Running tasks
+          const runningList = document.getElementById("running-list");
+          runningList.innerHTML = "";
+          data.running_tasks.forEach((task) => {
+            const li = document.createElement("li");
+            li.textContent = task;
+            runningList.appendChild(li);
+          });
+
+          // Waiting tasks
+          const waitingList = document.getElementById("waiting-list");
+          waitingList.innerHTML = "";
+          Object.values(data.waiting_tasks)
+            .flat()
+            .forEach((task) => {
+              const li = document.createElement("li");
+              li.textContent = `${task.function}(${task.args.join(", ")})`;
+              waitingList.appendChild(li);
+            });
+
+          // Completed tasks
+          const completedList = document.getElementById("completed-list");
+          completedList.innerHTML = "";
+          data.completed_tasks.forEach((task) => {
+            const li = document.createElement("li");
+            li.textContent = `${task.task_name} → ${task.result} (${task.action_time})`;
+            completedList.appendChild(li);
+          });
+        } catch (e) {
+          console.error("Fetch error:", e);
+        }
+      }
+
+      // Refresh every 2 second
+      setInterval(loadData, 2000);
+      loadData();
+    </script>
+  </body>
+</html>
