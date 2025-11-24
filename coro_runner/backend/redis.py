@@ -4,6 +4,7 @@ import json
 import pickle
 from typing import Any
 from redis import ConnectionPool, Redis
+
 from ..logging import logger
 
 from coro_runner.types import FutureFuncType
@@ -87,6 +88,24 @@ class RedisBackend(BaseBackend):
         data[queue_name]["queue"] = b64encode(pickle.dumps(_data)).decode("ascii")
         self.r_client.set(self.get_cache_key(self._dk__waiting), json.dumps(data))
 
+    def add_task_to_completed(
+        self,
+        task: FutureFuncType,
+        result: Any = None,
+        exception: str | None = None,
+    ) -> None:
+        """
+        Add a task to the completed dict.
+        """
+        data: dict[str, dict[str, Any]] = super().add_task_to_completed(
+            task,
+            result=result,
+            exception=exception,
+        )
+        self.r_client.set(
+            self.get_cache_key(self._dk__completed), json.dumps(data, default=str)
+        )
+
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
         Pop Left is the hard task sometimes because we need to pickle and unpickle the data along with the queue score.
@@ -119,6 +138,39 @@ class RedisBackend(BaseBackend):
         for key, value in data.items():
             data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
         return data
+
+    @property
+    def _completed(self) -> list[dict[str, Any]]:
+        """
+        Get the completed tasks.
+        """
+        result: str | None = self.r_client.get(self.get_cache_key(self._dk__completed))
+        return json.loads(result) if result else {}
+
+    def get_report(self) -> dict[str, Any]:
+        """
+        Get the report of the backend.
+        """
+        return {
+            "concurrency": self._concurrency,
+            "running_task_count": len(self._running),
+            "waiting_task_count": sum(
+                [len(queue["queue"]) for queue in self._waiting.values()]
+            ),
+            "running_tasks": [task.__name__ for task in self._running],
+            "waiting_tasks": {
+                queue_name: [
+                    {
+                        "function": item["fn"].__name__,
+                        "args": item["args"],
+                        "kwargs": item["kwargs"],
+                    }
+                    for item in queue_data["queue"]
+                ]
+                for queue_name, queue_data in self._waiting.items()
+            },
+            "completed_tasks": self._completed,
+        }
 
     async def cleanup(self):
         self.r_client.delete(self.get_cache_key(self._dk__concurrency))

@@ -82,7 +82,7 @@ class CoroRunner:
         """
         Get the report of the runner. It'll return the number of running, waiting and completed tasks.
         """
-        return self._backend.get_report
+        return self._backend.get_report()
 
     def _start_task(self, coro: FutureFuncType):
         """

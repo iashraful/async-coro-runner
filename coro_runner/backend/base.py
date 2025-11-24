@@ -35,7 +35,7 @@ class BaseBackend(abc.ABC):
             self._dk__concurrency: 1,
             self._dk__waiting: dict(),
             self._dk__running: set(),
-            self._dk__completed: dict(),
+            self._dk__completed: list(),
         }
 
     def set_concurrency(self, concurrency: int) -> None:
@@ -85,15 +85,19 @@ class BaseBackend(abc.ABC):
         task: FutureFuncType,
         result: Any = None,
         exception: str | None = None,
-    ) -> None:
+    ) -> dict[str, dict[str, Any]]:
         """
         Add a task to the completed dict.
         """
-        self.__data[self._dk__completed][get_task_name(task)] = {
-            "result": result,
-            "exception": exception,
-            "action_time": datetime.now(),
-        }
+        self.__data[self._dk__completed].append(
+            {
+                "task_name": get_task_name(task),
+                "result": result,
+                "exception": exception,
+                "action_time": datetime.now(),
+            }
+        )
+        return self.__data[self._dk__completed]
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
@@ -129,6 +133,13 @@ class BaseBackend(abc.ABC):
         return self.__data[self._dk__running]
 
     @property
+    def _completed(self) -> list[dict[str, Any]]:
+        """
+        Get the completed tasks.
+        """
+        return self.__data[self._dk__completed]
+
+    @property
     def running_task_count(self) -> int:
         """
         Get the number of running tasks.
@@ -142,12 +153,10 @@ class BaseBackend(abc.ABC):
         """
         return any([len(queue["queue"]) for queue in self._waiting.values()])
 
-    @property
     def get_report(self) -> dict[str, Any]:
         """
         Get the report of the backend.
         """
-        print(self._waiting)
         return {
             "concurrency": self._concurrency,
             "running_task_count": len(self._running),
@@ -157,12 +166,16 @@ class BaseBackend(abc.ABC):
             "running_tasks": [task.__name__ for task in self._running],
             "waiting_tasks": {
                 queue_name: [
-                    {**item, "function": item["fn"].__name__}
+                    {
+                        "function": item["fn"].__name__,
+                        "args": item["args"],
+                        "kwargs": item["kwargs"],
+                    }
                     for item in queue_data["queue"]
                 ]
                 for queue_name, queue_data in self._waiting.items()
             },
-            "completed_tasks": self.__data[self._dk__completed],
+            "completed_tasks": self._completed,
         }
 
     def is_valid_queue_name(self, queue_name: str) -> bool:

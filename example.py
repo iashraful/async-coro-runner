@@ -76,6 +76,7 @@ async def fire_send_email(count: int = 25, emails: list[str] = []):
         )
     return {"Task": "Done"}
 
+
 @app.get("/report")
 async def get_report():
     return runner.get_report()
