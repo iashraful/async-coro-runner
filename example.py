@@ -37,6 +37,7 @@ async def rand_delay(msg: str, unit: int = 5):
     logger.info(
         f"Random Delay ended: {current_task.get_name() if current_task else 'No name'}"
     )
+    return f"Done - {current_task.get_name() if current_task else 'No name'}"
 
 
 async def dummy_email_send(recipient_emails: list[str]):

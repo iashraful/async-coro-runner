@@ -3,6 +3,8 @@ from collections import deque
 from datetime import datetime
 from typing import Any
 
+from coro_runner.utils import get_task_name
+
 from ..logging import logger
 from ..types import FutureFuncType
 
@@ -87,7 +89,7 @@ class BaseBackend(abc.ABC):
         """
         Add a task to the completed dict.
         """
-        self.__data[self._dk__completed][task] = {
+        self.__data[self._dk__completed][get_task_name(task)] = {
             "result": result,
             "exception": exception,
             "action_time": datetime.now(),
@@ -145,14 +147,21 @@ class BaseBackend(abc.ABC):
         """
         Get the report of the backend.
         """
+        print(self._waiting)
         return {
             "concurrency": self._concurrency,
             "running_task_count": len(self._running),
             "waiting_task_count": sum(
                 [len(queue["queue"]) for queue in self._waiting.values()]
             ),
-            "running_tasks": list(self._running),
-            "waiting_queues": self._waiting,
+            "running_tasks": [task.__name__ for task in self._running],
+            "waiting_tasks": {
+                queue_name: [
+                    {**item, "function": item["fn"].__name__}
+                    for item in queue_data["queue"]
+                ]
+                for queue_name, queue_data in self._waiting.items()
+            },
             "completed_tasks": self.__data[self._dk__completed],
         }
 

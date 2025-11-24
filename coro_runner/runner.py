@@ -108,7 +108,7 @@ class CoroRunner:
             logger.error(f"Error in task {coro.__name__}: {err}")
         finally:
             self._backend.remove_task_from_running(coro)
-            self._backend.add_task_to_completed(coro, result=result, exception=str(err))
+            self._backend.add_task_to_completed(coro, result=result, exception=err)
             if self._backend.any_waiting_task:
                 coro2_data: dict[str, FutureFuncType | Any] | None = (
                     self._backend.pop_task_from_waiting_queue()
