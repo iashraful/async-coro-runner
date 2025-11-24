@@ -28,12 +28,12 @@ runner = CoroRunner(
 )
 
 
-async def rand_delay():
+async def rand_delay(msg: str, unit: int = 5):
     current_task: asyncio.Task | None = asyncio.current_task()
     logger.info(
-        f"Random Delay started: {current_task.get_name() if current_task else 'No Name'}",
+        f"{msg} | Random Delay started: {current_task.get_name() if current_task else 'No Name'}",
     )
-    await asyncio.sleep(random() * 5)
+    await asyncio.sleep(random() * unit)
     logger.info(
         f"Random Delay ended: {current_task.get_name() if current_task else 'No name'}"
     )
@@ -54,7 +54,14 @@ async def dummy_email_send(recipient_emails: list[str]):
 @app.get("/random-delay")
 async def fire_random_delay(count: int = 25):
     for _ in range(count):
-        runner.add_task(rand_delay, queue_name="low_priority")
+        runner.add_task(
+            rand_delay,
+            args=(
+                "Static Msg",
+                10,
+            ),
+            queue_name="low_priority",
+        )
     return {"Task": "Done"}
 
 
@@ -67,3 +74,7 @@ async def fire_send_email(count: int = 25, emails: list[str] = []):
             kwargs={"recipient_emails": emails},
         )
     return {"Task": "Done"}
+
+@app.get("/report")
+async def get_report():
+    return runner.get_report()
