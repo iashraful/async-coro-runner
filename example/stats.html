@@ -1,134 +1,605 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Worker Stats</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Worker Stats — Minimal Vue UI</title>
+
+    <!-- Vue 3 (global build) - single small script include -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
     <style>
+      /* Minimal shadcn-like look: cards, rounded corners, subtle shadows */
+      :root {
+        --bg: #f7fafc;
+        --card: #ffffff;
+        --muted: #6b7280;
+        --accent: #2563eb;
+        --success: #10b981;
+        --border: #e6e9ee;
+      }
+      html,
       body {
-        font-family: Arial, sans-serif;
-        background: #f5f5f5;
+        height: 100%;
+      }
+      body {
         margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+        background: var(--bg);
+        color: #0f172a;
         padding: 20px;
-        color: #222;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
       }
       h1 {
-        text-align: center;
-        margin-bottom: 20px;
+        font-size: 20px;
+        margin: 0;
       }
-      .grid {
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .top-grid {
         display: grid;
-        gap: 16px;
-      }
-      .three-col {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
       }
       .card {
-        background: white;
-        border-radius: 14px;
-        padding: 16px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
       }
-      .card-title {
-        font-size: 14px;
-        color: #777;
-        margin-bottom: 4px;
+      .stat-title {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
       }
-      .card-value {
-        font-size: 28px;
-        font-weight: bold;
+      .stat-value {
+        font-size: 26px;
+        font-weight: 600;
+      }
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .list-card {
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .list-title {
+        font-weight: 600;
+      }
+      .pill {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fbfeff;
+        color: var(--muted);
+      }
+
+      .list-body {
+        flex: 1;
+        overflow: auto;
+        padding-right: 4px;
       }
       ul {
         list-style: none;
-        padding: 0;
         margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
       }
       li {
+        background: #fbfdff;
+        border-radius: 10px;
         padding: 8px 10px;
-        background: #fafafa;
+        border: 1px solid #f1f5f9;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .pagination {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .btn {
+        border: 1px solid var(--border);
+        background: white;
+        padding: 6px 8px;
         border-radius: 8px;
-        margin-bottom: 6px;
-        font-size: 14px;
-        border: 1px solid #eee;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .select {
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        padding: 6px 8px;
+        background: white;
+        font-size: 13px;
+      }
+
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      /* responsive */
+      @media (max-width: 900px) {
+        .cols {
+          grid-template-columns: 1fr;
+        }
+        .top-grid {
+          grid-template-columns: repeat(1, 1fr);
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Worker Stats</h1>
+    <div id="app" class="wrap">
+      <header>
+        <div>
+          <h1>Worker Stats</h1>
+          <div class="sub">Live worker overview — updates every second</div>
+        </div>
 
-    <div class="grid three-col" id="top-stats"></div>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <div class="small">
+            <select
+              v-model.number="pollInterval"
+              class="select"
+              title="Poll interval"
+            >
+              <option :value="2000">Polling 2s</option>
+              <option :value="5000">Polling 5s</option>
+              <option :value="10000">Polling 10s</option>
+            </select>
+          </div>
+          <select
+            v-model.number="pageSize"
+            class="select"
+            title="Items per page"
+          >
+            <option :value="5">5 / page</option>
+            <option :value="10">10 / page</option>
+            <option :value="15">15 / page</option>
+          </select>
+        </div>
+      </header>
 
-    <div class="card">
-      <h2>Running Tasks</h2>
-      <ul id="running-list"></ul>
-    </div>
+      <!-- top stats -->
+      <section class="top-grid">
+        <div class="card">
+          <div class="stat-title">Concurrency</div>
+          <div class="stat-value">{{report.concurrency ?? '—'}}</div>
+        </div>
+        <div class="card">
+          <div class="stat-title">Running Tasks</div>
+          <div class="stat-value">{{report.running_task_count ?? 0}}</div>
+        </div>
+        <div class="card">
+          <div class="stat-title">Waiting Tasks</div>
+          <div class="stat-value">{{report.waiting_task_count ?? 0}}</div>
+        </div>
+      </section>
 
-    <div class="card">
-      <h2>Waiting Tasks</h2>
-      <ul id="waiting-list"></ul>
-    </div>
+      <!-- lists -->
+      <section class="cols">
+        <!-- Running -->
+        <div class="card list-card">
+          <div class="list-header">
+            <div>
+              <div class="list-title">Running</div>
+              <div class="muted">
+                {{report.running_tasks?.length ?? 0}} tasks
+              </div>
+            </div>
+            <div class="pagination">
+              <button
+                class="btn"
+                @click="prev('running')"
+                :disabled="runningPage===1"
+              >
+                Prev
+              </button>
+              <div class="pill">Page {{runningPage}} / {{runningPages}}</div>
+              <button
+                class="btn"
+                @click="next('running')"
+                :disabled="runningPage===runningPages"
+              >
+                Next
+              </button>
+            </div>
+          </div>
 
-    <div class="card">
-      <h2>Completed Tasks</h2>
-      <ul id="completed-list"></ul>
+          <div class="list-body">
+            <ul>
+              <li v-for="item in pagedRunning" :key="`run-${itemIndex(item)}`">
+                <div>{{item}}</div>
+              </li>
+              <li
+                v-if="(report.running_tasks?.length ?? 0) === 0"
+                class="muted"
+              >
+                No running tasks
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Waiting -->
+        <div class="card list-card">
+          <div class="list-header">
+            <div>
+              <div class="list-title">Waiting</div>
+              <div class="muted">{{flatWaiting.length}} tasks (by queue)</div>
+            </div>
+            <div class="pagination">
+              <button
+                class="btn"
+                @click="prev('waiting')"
+                :disabled="waitingPage===1"
+              >
+                Prev
+              </button>
+              <div class="pill">Page {{waitingPage}} / {{waitingPages}}</div>
+              <button
+                class="btn"
+                @click="next('waiting')"
+                :disabled="waitingPage===waitingPages"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <div class="list-body">
+            <ul>
+              <li v-for="(task, idx) in pagedWaiting" :key="`wait-${idx}`">
+                <div>
+                  <div style="font-weight: 600; font-size: 13px">
+                    {{task.function}}
+                  </div>
+                  <div class="meta">
+                    {{task.queue}} • args: [{{task.args.join(', ')}}]
+                  </div>
+                </div>
+                <div class="muted">q: {{task.queue}}</div>
+              </li>
+              <li v-if="flatWaiting.length === 0" class="muted">
+                No waiting tasks
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Completed -->
+        <div class="card list-card" style="grid-column: span 2">
+          <div class="list-header">
+            <div>
+              <div class="list-title">Completed</div>
+              <div class="muted">
+                {{report.completed_tasks?.length ?? 0}} items
+              </div>
+            </div>
+            <div class="pagination">
+              <button
+                class="btn"
+                @click="prev('completed')"
+                :disabled="completedPage===1"
+              >
+                Prev
+              </button>
+              <div class="pill">
+                Page {{completedPage}} / {{completedPages}}
+              </div>
+              <button
+                class="btn"
+                @click="next('completed')"
+                :disabled="completedPage===completedPages"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <div class="list-body">
+            <ul>
+              <li v-for="task in pagedCompleted" :key="task.task_name">
+                <div style="display: flex; flex-direction: column">
+                  <div style="font-weight: 600">{{task.task_name}}</div>
+                  <div class="meta">{{task.result}} • {{task.action_time}}</div>
+                </div>
+                <div
+                  :style="{color: task.exception ? '#ef4444' : 'var(--muted)', fontSize:'12px'}"
+                >
+                  {{ task.exception ? 'Error' : 'OK' }}
+                </div>
+              </li>
+              <li
+                v-if="(report.completed_tasks?.length ?? 0) === 0"
+                class="muted"
+              >
+                No completed tasks
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="small">Last update: {{lastUpdatedText}}</div>
+      </footer>
     </div>
 
     <script>
-      async function loadData() {
-        try {
-          const res = await fetch("/report");
-          const data = await res.json();
+      const { createApp, ref, reactive, computed, onMounted, onBeforeUnmount } =
+        Vue;
 
-          // Top stats
-          document.getElementById("top-stats").innerHTML = "";
-          const statItems = [
-            { title: "Concurrency", value: data.concurrency },
-            { title: "Running Tasks", value: data.running_task_count },
-            { title: "Waiting Tasks", value: data.waiting_task_count },
-          ];
-          statItems.forEach((s) => {
-            const c = document.createElement("div");
-            c.className = "card";
-            c.innerHTML = `<div class='card-title'>${s.title}</div><div class='card-value'>${s.value}</div>`;
-            document.getElementById("top-stats").appendChild(c);
+      createApp({
+        setup() {
+          const report = reactive({
+            concurrency: null,
+            running_task_count: 0,
+            waiting_task_count: 0,
+            running_tasks: [],
+            waiting_tasks: {},
+            completed_tasks: [],
           });
 
-          // Running tasks
-          const runningList = document.getElementById("running-list");
-          runningList.innerHTML = "";
-          data.running_tasks.forEach((task) => {
-            const li = document.createElement("li");
-            li.textContent = task;
-            runningList.appendChild(li);
+          const lastUpdated = ref(null);
+          const pollInterval = ref(10000); // ms
+          const timer = { id: null };
+
+          // pagination state
+          const pageSize = ref(10);
+          const runningPage = ref(1);
+          const waitingPage = ref(1);
+          const completedPage = ref(1);
+
+          // flatten waiting tasks into list with queue name
+          const flatWaiting = computed(() => {
+            const groups = report.waiting_tasks || {};
+            const arr = [];
+            for (const [queue, tasks] of Object.entries(groups)) {
+              if (!tasks || tasks.length === 0) continue;
+              for (const t of tasks) {
+                arr.push({
+                  queue,
+                  function: t.function ?? t.task_name ?? "unknown",
+                  args: t.args ?? [],
+                  kwargs: t.kwargs ?? {},
+                });
+              }
+            }
+            return arr;
           });
 
-          // Waiting tasks
-          const waitingList = document.getElementById("waiting-list");
-          waitingList.innerHTML = "";
-          Object.values(data.waiting_tasks)
-            .flat()
-            .forEach((task) => {
-              const li = document.createElement("li");
-              li.textContent = `${task.function}(${task.args.join(", ")})`;
-              waitingList.appendChild(li);
-            });
+          // paging helpers
+          function pageList(list, page, size) {
+            const s = Math.max(1, size);
+            const total = Math.max(0, list.length || 0);
+            const pages = Math.max(1, Math.ceil(total / s) || 1);
+            if (page.value > pages) page.value = pages;
+            const start = (page.value - 1) * s;
+            let d = {
+              items: list.slice(start, start + s),
+              pages,
+            };
+            return d;
+          }
 
-          // Completed tasks
-          const completedList = document.getElementById("completed-list");
-          completedList.innerHTML = "";
-          data.completed_tasks.forEach((task) => {
-            const li = document.createElement("li");
-            li.textContent = `${task.task_name} → ${task.result} (${task.action_time})`;
-            completedList.appendChild(li);
+          const runningPages = computed(() =>
+            Math.max(
+              1,
+              Math.ceil((report.running_tasks?.length || 0) / pageSize.value)
+            )
+          );
+          const waitingPages = computed(() =>
+            Math.max(1, Math.ceil(flatWaiting.value.length / pageSize.value))
+          );
+          const completedPages = computed(() =>
+            Math.max(
+              1,
+              Math.ceil((report.completed_tasks?.length || 0) / pageSize.value)
+            )
+          );
+
+          const pagedRunning = computed(
+            () =>
+              pageList(report.running_tasks || [], runningPage, pageSize.value)
+                .items
+          );
+          const pagedWaiting = computed(
+            () => pageList(flatWaiting.value, waitingPage, pageSize.value).items
+          );
+          const pagedCompleted = computed(
+            () =>
+              pageList(
+                report.completed_tasks || [],
+                completedPage,
+                pageSize.value
+              ).items
+          );
+
+          // small stable key function for list items
+          function itemIndex(it) {
+            // we don't have strong ids for running tasks, use index fallback
+            return report.running_tasks.indexOf(it);
+          }
+
+          // next / prev
+          function next(kind) {
+            if (kind === "running") {
+              if (runningPage.value < runningPages.value) runningPage.value++;
+            }
+            if (kind === "waiting") {
+              if (waitingPage.value < waitingPages.value) waitingPage.value++;
+            }
+            if (kind === "completed") {
+              if (completedPage.value < completedPages.value)
+                completedPage.value++;
+            }
+          }
+          function prev(kind) {
+            if (kind === "running") {
+              if (runningPage.value > 1) runningPage.value--;
+            }
+            if (kind === "waiting") {
+              if (waitingPage.value > 1) waitingPage.value--;
+            }
+            if (kind === "completed") {
+              if (completedPage.value > 1) completedPage.value--;
+            }
+          }
+
+          // data fetch
+          async function load() {
+            try {
+              const res = await fetch("/report", { cache: "no-cache" });
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              const json = await res.json();
+
+              // shallow update of reactive report
+              report.concurrency = json.concurrency;
+              report.running_task_count = json.running_task_count;
+              report.waiting_task_count = json.waiting_task_count;
+              report.running_tasks = json.running_tasks || [];
+              report.waiting_tasks = json.waiting_tasks || {};
+              report.completed_tasks = json.completed_tasks || [];
+
+              lastUpdated.value = new Date();
+              // ensure pages don't overflow after new data arrives
+              if (runningPage.value > runningPages.value)
+                runningPage.value = runningPages.value;
+              if (waitingPage.value > waitingPages.value)
+                waitingPage.value = waitingPages.value;
+              if (completedPage.value > completedPages.value)
+                completedPage.value = completedPages.value;
+            } catch (err) {
+              // keep previous data and log error
+              console.error("Failed to fetch /report:", err);
+            }
+          }
+
+          // readable last updated text
+          const lastUpdatedText = computed(() =>
+            lastUpdated.value ? lastUpdated.value.toLocaleTimeString() : "never"
+          );
+
+          onMounted(() => {
+            // initial load + start poll
+            load();
+            timer.id = setInterval(load, pollInterval.value || 1000);
           });
-        } catch (e) {
-          console.error("Fetch error:", e);
-        }
-      }
+          onBeforeUnmount(() => {
+            if (timer.id) clearInterval(timer.id);
+          });
 
-      // Refresh every 2 second
-      setInterval(loadData, 2000);
-      loadData();
+          // when user changes pageSize, reset pages to 1 for better UX
+          function watchPageSize() {
+            runningPage.value = 1;
+            waitingPage.value = 1;
+            completedPage.value = 1;
+          }
+
+          function watchPollInterval() {
+            console.log("Updating poll interval to", pollInterval.value);
+            if (timer.id) clearInterval(timer.id);
+            timer.id = setInterval(load, pollInterval.value || 1000);
+          }
+
+          // Watch changes on pollInterval
+          let lastPI = pollInterval.value;
+          setInterval(() => {
+            if (lastPI !== pollInterval.value) {
+              lastPI = pollInterval.value;
+              watchPollInterval();
+            }
+          }, 200);
+
+          // watch changes on pageSize
+          // Vue global prod build doesn't include `watch` binding on setup returns; we can use a simple polling watcher via an interval to detect changes (lightweight):
+          let lastPS = pageSize.value;
+          setInterval(() => {
+            if (lastPS !== pageSize.value) {
+              lastPS = pageSize.value;
+              watchPageSize();
+            }
+          }, 200);
+
+          return {
+            report,
+            lastUpdatedText,
+            pollInterval,
+            pageSize,
+            runningPage,
+            waitingPage,
+            completedPage,
+            pagedRunning,
+            pagedWaiting,
+            pagedCompleted,
+            runningPages,
+            waitingPages,
+            completedPages,
+            next,
+            prev,
+            itemIndex,
+            flatWaiting,
+          };
+        },
+      }).mount("#app");
     </script>
   </body>
 </html>
