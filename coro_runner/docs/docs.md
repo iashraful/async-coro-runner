@@ -26,7 +26,7 @@ async def my_coroutine():
 
 runner = CoroRunner(concurrency=10)
 for _ in range(count):
-        runner.add_task(rand_delay())
+        runner.add_task(rand_delay, args=(), kwargs={})
 ```
 
 ### Defining the queue with priority
@@ -43,9 +43,9 @@ runner = CoroRunner(
     ),
 )
 # Add the tasks to the queue
-runner.add_task(rand_delay(), queue_name="low_priority")
+runner.add_task(rand_delay, queue_name="low_priority")
 # Another queue
-runner.add_task(rand_delay(), queue_name="async_task")
+runner.add_task(rand_delay, queue_name="async_task")
 ```
 
 **Note: The higher value of score menas it has high priority.**
@@ -62,3 +62,36 @@ runner = CoroRunner(
 ```
 
 **If you have auth in redis? then, you can send password on RedisConfig**
+
+## Stats/Reporting Page
+
+![Stats Page](../../example/stats.png "Stats Page")
+
+**You'll get your desired data at here,**
+
+```python
+runner.get_report()
+```
+
+**Sample**
+
+```json
+{
+   "concurrency": 5,
+   "running_task_count": 5,
+   "waiting_task_count": 18,
+   "running_tasks": ["rand_delay","rand_delay","rand_delay","rand_delay","rand_delay"],
+   "waiting_tasks": {
+      "default": [],
+      "send_mail": [],
+      "async_task": [],
+      "low_priority": [
+         {"function":"rand_delay","args":["Static Msg",10],"kwargs":{}}
+      ]
+   },
+   "completed_tasks": [
+      {"task_name":"Task-4:rand_delay","result":"Done - Task-4","exception":null,"action_time":"2025-11-24 22:47:47.481516"},
+      {"task_name":"Task-9:rand_delay","result":"Done - Task-9","exception":null,"action_time":"2025-11-24 22:47:47.521230"}
+   ]
+}
+```

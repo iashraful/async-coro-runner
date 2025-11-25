@@ -85,7 +85,7 @@ class BaseBackend(abc.ABC):
         task: FutureFuncType,
         result: Any = None,
         exception: str | None = None,
-    ) -> dict[str, dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Add a task to the completed dict.
         """

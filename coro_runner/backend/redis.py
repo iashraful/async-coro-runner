@@ -97,11 +97,18 @@ class RedisBackend(BaseBackend):
         """
         Add a task to the completed dict.
         """
-        data: dict[str, dict[str, Any]] = super().add_task_to_completed(
+        data: list[dict[str, Any]] = super().add_task_to_completed(
             task,
             result=result,
             exception=exception,
         )
+        exiting_data: str | None = self.r_client.get(
+            self.get_cache_key(self._dk__completed)
+        )
+        if exiting_data:
+            existing_list: list = json.loads(exiting_data)
+            existing_list.append(data)
+            data = existing_list
         self.r_client.set(
             self.get_cache_key(self._dk__completed), json.dumps(data, default=str)
         )
