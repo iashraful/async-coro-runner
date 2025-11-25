@@ -203,6 +203,9 @@
               <option :value="2000">Polling 2s</option>
               <option :value="5000">Polling 5s</option>
               <option :value="10000">Polling 10s</option>
+              <option :value="15000">Polling 15s</option>
+              <option :value="30000">Polling 30s</option>
+              <option :value="60000">Polling 60s</option>
             </select>
           </div>
           <select
@@ -555,7 +558,6 @@
           }
 
           function watchPollInterval() {
-            console.log("Updating poll interval to", pollInterval.value);
             if (timer.id) clearInterval(timer.id);
             timer.id = setInterval(load, pollInterval.value || 1000);
           }
