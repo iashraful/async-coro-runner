@@ -93,11 +93,11 @@ class RedisBackend(BaseBackend):
         task: FutureFuncType,
         result: Any = None,
         exception: str | None = None,
-    ) -> None:
+    ) -> dict[str, Any]:
         """
         Add a task to the completed dict.
         """
-        data: list[dict[str, Any]] = super().add_task_to_completed(
+        data: dict[str, Any] = super().add_task_to_completed(
             task,
             result=result,
             exception=exception,
@@ -107,11 +107,15 @@ class RedisBackend(BaseBackend):
         )
         if exiting_data:
             existing_list: list = json.loads(exiting_data)
-            existing_list.append(data)
-            data = existing_list
+        else:
+            existing_list = list()
+
+        existing_list.append(data)
         self.r_client.set(
-            self.get_cache_key(self._dk__completed), json.dumps(data, default=str)
+            self.get_cache_key(self._dk__completed),
+            json.dumps(existing_list, default=str),
         )
+        return data
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
@@ -152,7 +156,7 @@ class RedisBackend(BaseBackend):
         Get the completed tasks.
         """
         result: str | None = self.r_client.get(self.get_cache_key(self._dk__completed))
-        return json.loads(result) if result else {}
+        return json.loads(result) if result else []
 
     def get_report(self) -> dict[str, Any]:
         """
@@ -176,7 +180,7 @@ class RedisBackend(BaseBackend):
                 ]
                 for queue_name, queue_data in self._waiting.items()
             },
-            "completed_tasks": self._completed,
+            "completed_tasks": self._completed[::-1],
         }
 
     async def cleanup(self):

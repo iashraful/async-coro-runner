@@ -85,19 +85,18 @@ class BaseBackend(abc.ABC):
         task: FutureFuncType,
         result: Any = None,
         exception: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
         Add a task to the completed dict.
         """
-        self.__data[self._dk__completed].append(
-            {
-                "task_name": get_task_name(task),
-                "result": result,
-                "exception": exception,
-                "action_time": datetime.now(),
-            }
-        )
-        return self.__data[self._dk__completed]
+        _d = {
+            "task_name": get_task_name(task),
+            "result": result,
+            "exception": exception,
+            "action_time": datetime.now(),
+        }
+        self.__data[self._dk__completed].append(_d)
+        return _d
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
