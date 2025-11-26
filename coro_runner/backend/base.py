@@ -3,6 +3,7 @@ from collections import deque
 from datetime import datetime
 from typing import Any
 
+from coro_runner.schema import TaskModel
 from coro_runner.utils import get_task_name
 
 from ..logging import logger
@@ -34,9 +35,10 @@ class BaseBackend(abc.ABC):
         self.__data = {
             self._dk__concurrency: 1,
             self._dk__waiting: dict(),
-            self._dk__running: set(),
+            self._dk__running: set(),  # tuples of (task, task_id)
             self._dk__completed: list(),
         }
+        self.__task_db = dict()
 
     def set_concurrency(self, concurrency: int) -> None:
         """
@@ -50,10 +52,47 @@ class BaseBackend(abc.ABC):
         """
         self.__data[self._dk__waiting] = waitings
 
+    def add_task_to_db(
+        self,
+        queue_name: str,
+        task: FutureFuncType,
+        args: list | tuple = [],
+        kwargs: dict = {},
+    ) -> TaskModel:
+        """
+        Add a task to the task db.
+        """
+        task_data = TaskModel(
+            name=get_task_name(task),
+            queue=queue_name,
+            received=datetime.now(),
+            args=list(args),
+            kwargs=kwargs,
+        )
+        self.__task_db[task_data.task_id] = task_data
+        return task_data
+
+    def update_task_in_db(
+        self,
+        task_id: str,
+        **updates: Any,
+    ) -> TaskModel | None:
+        """
+        Update a task in the task db.
+        """
+        task_data = self.__task_db.get(task_id)
+        if not task_data:
+            return None
+        for key, value in updates.items():
+            if hasattr(task_data, key):
+                setattr(task_data, key, value)
+        return task_data
+
     def add_task_to_waiting_queue(
         self,
         queue_name: str,
         task: FutureFuncType,
+        task_id: str,
         args: list | tuple = [],
         kwargs: dict = {},
     ) -> None:
@@ -62,23 +101,29 @@ class BaseBackend(abc.ABC):
         """
         self._waiting[queue_name]["queue"].append(
             {
+                "task_id": task_id,
                 "fn": task,
                 "args": args,
                 "kwargs": kwargs,
             }
         )
 
-    def add_task_to_running(self, task: FutureFuncType) -> None:
+    def add_task_to_running(self, task: FutureFuncType, task_id: str) -> None:
         """
         Add a task to the running set.
         """
-        self._running.add(task)
+        self._running.add((task, task_id))
 
-    def remove_task_from_running(self, task: FutureFuncType) -> None:
+    def remove_task_from_running(self, task: FutureFuncType, task_id: str) -> None:
         """
         Remove a task from the running set.
         """
-        self._running.remove(task)
+        try:
+            self._running.remove((task, task_id))
+        except KeyError:
+            logger.error(
+                f"Task {task.__name__} with ID {task_id} not found in running set."
+            )
 
     def add_task_to_completed(
         self,
@@ -162,7 +207,7 @@ class BaseBackend(abc.ABC):
             "waiting_task_count": sum(
                 [len(queue["queue"]) for queue in self._waiting.values()]
             ),
-            "running_tasks": [task.__name__ for task in self._running],
+            "running_tasks": [task.__name__ for task, _ in self._running],
             "waiting_tasks": {
                 queue_name: [
                     {

@@ -6,7 +6,7 @@ from .backend import BaseBackend, InMemoryBackend
 from .utils import prepare_queue
 from .logging import logger
 
-from .schema import QueueConfig
+from .schema import QueueConfig, TaskModel
 from .types import FutureFuncType
 
 
@@ -72,11 +72,20 @@ class CoroRunner:
             queue_name = self._default_queue
         if self._backend.is_valid_queue_name(queue_name) is False:
             raise ValueError(f"Unknown queue name: {queue_name}")
-        logger.debug(f"Adding {coro.__name__} to queue: {queue_name}")
+        logger.debug("Adding the task to db.")
+        task_data: TaskModel = self._backend.add_task_to_db(
+            queue_name, coro, args, kwargs
+        )
+
+        logger.debug(
+            f"Adding Task: {coro.__name__}({task_data.task_id}) to queue: {queue_name}"
+        )
         if len(self._backend._running) >= self._backend._concurrency:
-            self._backend.add_task_to_waiting_queue(queue_name, coro, args, kwargs)
+            self._backend.add_task_to_waiting_queue(
+                queue_name, coro, task_data.task_id, args, kwargs
+            )
         else:
-            self._start_task(coro(*args, **kwargs))
+            self._start_task(coro(*args, **kwargs), task_data.task_id)
 
     def get_report(self) -> dict[str, Any]:
         """
@@ -84,17 +93,17 @@ class CoroRunner:
         """
         return self._backend.get_report()
 
-    def _start_task(self, coro: FutureFuncType):
+    def _start_task(self, coro: FutureFuncType, task_id: str):
         """
         Stat the task and add it to the running set.
         """
         self._backend.add_task_to_running(
-            coro
+            coro, task_id
         )  # Here coro is couroutine object with all the params
-        asyncio.create_task(self._task(coro))
-        logger.debug(f"Started task: {coro.__name__}")
+        asyncio.create_task(self._task(coro, task_id))
+        logger.debug(f"Started task: {coro.__name__}. ID: {task_id}")
 
-    async def _task(self, coro: FutureFuncType):
+    async def _task(self, coro: FutureFuncType, task_id: str):
         """
         The main task runner. It'll run the coroutine and remove it from the running set after completion.
         If there is any task in the waiting queue, it'll start the task.
@@ -107,15 +116,17 @@ class CoroRunner:
         except Exception as err:
             logger.error(f"Error in task {coro.__name__}: {err}")
         finally:
-            self._backend.remove_task_from_running(coro)
-            self._backend.add_task_to_completed(coro, result=result, exception=err)
+            self._backend.remove_task_from_running(coro, task_id)
             if self._backend.any_waiting_task:
-                coro2_data: dict[str, FutureFuncType | Any] | None = (
+                coro2_data: dict[str, Any] | None = (
                     self._backend.pop_task_from_waiting_queue()
                 )
                 if coro2_data:
                     __fn = coro2_data["fn"]
-                    self._start_task(__fn(*coro2_data["args"], **coro2_data["kwargs"]))
+                    self._start_task(
+                        coro=__fn(*coro2_data["args"], **coro2_data["kwargs"]),
+                        task_id=coro2_data["task_id"],
+                    )
 
     async def run_until_exit(self):
         """

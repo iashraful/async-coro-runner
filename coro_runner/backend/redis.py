@@ -68,7 +68,12 @@ class RedisBackend(BaseBackend):
         self.r_client.set(self.get_cache_key("waiting"), json.dumps(jsonable_data))
 
     def add_task_to_waiting_queue(
-        self, queue_name: str, task: FutureFuncType, args: list = [], kwargs: dict = {}
+        self,
+        queue_name: str,
+        task: FutureFuncType,
+        task_id: str,
+        args: list = [],
+        kwargs: dict = {},
     ) -> None:
         """ "
         Adding a task to the waiting queue. Once again read from cache append and pickle dump again.
@@ -80,6 +85,7 @@ class RedisBackend(BaseBackend):
         _data = pickle.loads(b64decode(data[queue_name]["queue"]))
         _data.append(
             {
+                "task_id": task_id,
                 "fn": task,
                 "args": args,
                 "kwargs": kwargs,
@@ -168,7 +174,7 @@ class RedisBackend(BaseBackend):
             "waiting_task_count": sum(
                 [len(queue["queue"]) for queue in self._waiting.values()]
             ),
-            "running_tasks": [task.__name__ for task in self._running],
+            "running_tasks": [task.__name__ for task, _ in self._running],
             "waiting_tasks": {
                 queue_name: [
                     {

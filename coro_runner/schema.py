@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+import uuid
 
 from .enums import TaskStatusEnum
 
@@ -25,12 +26,13 @@ class TaskModel:
     queue: str
     received: datetime
     status: TaskStatusEnum = TaskStatusEnum.PENDING
+    task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     args: list = field(default_factory=lambda: [])
     kwargs: dict = field(default_factory=lambda: {})
     result: str | None = None
     started: datetime | None = None
     finished: datetime | None = None
-    errors: str | None = None
+    exception: str | None = None
 
 
 @dataclass
