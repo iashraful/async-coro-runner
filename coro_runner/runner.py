@@ -1,5 +1,8 @@
 import asyncio
+from datetime import datetime
 from typing import Any
+
+from coro_runner.enums import TaskStatusEnum
 
 from .backend import BaseBackend, InMemoryBackend
 
@@ -111,12 +114,24 @@ class CoroRunner:
         err = None
         result = None
         try:
+            self._backend.update_task_in_db(
+                task_id,
+                status=TaskStatusEnum.RUNNING.value,
+                started=datetime.now(),
+            )
             result = await coro
             return result
         except Exception as err:
             logger.error(f"Error in task {coro.__name__}: {err}")
         finally:
             self._backend.remove_task_from_running(coro, task_id)
+            self._backend.update_task_in_db(
+                task_id,
+                status=TaskStatusEnum.FINISHED.value,
+                finished=datetime.now(),
+                result=result,
+                exception=str(err) if err else None,
+            )
             if self._backend.any_waiting_task:
                 coro2_data: dict[str, Any] | None = (
                     self._backend.pop_task_from_waiting_queue()

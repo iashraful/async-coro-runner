@@ -25,7 +25,7 @@ class TaskModel:
     name: str
     queue: str
     received: datetime
-    status: TaskStatusEnum = TaskStatusEnum.PENDING
+    status: int = TaskStatusEnum.PENDING.value
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     args: list = field(default_factory=lambda: [])
     kwargs: dict = field(default_factory=lambda: {})

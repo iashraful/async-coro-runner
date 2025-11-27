@@ -1,9 +1,13 @@
 from base64 import b64decode, b64encode
 from collections import deque
+from dataclasses import asdict
+from datetime import datetime
 import json
 import pickle
 from typing import Any
 from redis import ConnectionPool, Redis
+
+from coro_runner.utils import get_task_name
 
 from ..logging import logger
 
@@ -11,7 +15,7 @@ from coro_runner.types import FutureFuncType
 
 from .base import BaseBackend
 
-from ..schema import RedisConfig
+from ..schema import RedisConfig, TaskModel
 
 
 class RedisBackend(BaseBackend):
@@ -94,34 +98,84 @@ class RedisBackend(BaseBackend):
         data[queue_name]["queue"] = b64encode(pickle.dumps(_data)).decode("ascii")
         self.r_client.set(self.get_cache_key(self._dk__waiting), json.dumps(data))
 
-    def add_task_to_completed(
+    def add_task_to_db(
         self,
+        queue_name: str,
         task: FutureFuncType,
-        result: Any = None,
-        exception: str | None = None,
-    ) -> dict[str, Any]:
+        args: list | tuple = [],
+        kwargs: dict = {},
+    ) -> TaskModel:
         """
-        Add a task to the completed dict.
+        Add a task to the task db.
         """
-        data: dict[str, Any] = super().add_task_to_completed(
-            task,
-            result=result,
-            exception=exception,
+        task_data = TaskModel(
+            name=get_task_name(task),
+            queue=queue_name,
+            received=datetime.now(),
+            args=list(args),
+            kwargs=kwargs,
         )
-        exiting_data: str | None = self.r_client.get(
-            self.get_cache_key(self._dk__completed)
+        self.r_client.hset(
+            self.get_cache_key(self._dk__all_tasks),
+            task_data.task_id,
+            json.dumps(asdict(task_data), default=str),
         )
-        if exiting_data:
-            existing_list: list = json.loads(exiting_data)
-        else:
-            existing_list = list()
+        return task_data
 
-        existing_list.append(data)
-        self.r_client.set(
-            self.get_cache_key(self._dk__completed),
-            json.dumps(existing_list, default=str),
+    def update_task_in_db(
+        self,
+        task_id: str,
+        **updates: Any,
+    ) -> TaskModel | None:
+        """
+        Update a task in the task db.
+        """
+        task_data_cache: str | None = self.r_client.hget(
+            self.get_cache_key(self._dk__all_tasks), task_id
         )
-        return data
+        if task_data_cache:
+            task_data = TaskModel(**json.loads(task_data_cache))
+        else:
+            return None
+        if not task_data:
+            return None
+        for key, value in updates.items():
+            if hasattr(task_data, key):
+                setattr(task_data, key, value)
+
+        self.r_client.hset(
+            self.get_cache_key(self._dk__all_tasks),
+            task_data.task_id,
+            json.dumps(asdict(task_data), default=str),
+        )
+        return task_data
+
+    def get_task_from_db(self, task_id: str) -> TaskModel | None:
+        """
+        Get a task from the task db.
+        """
+        task_data_cache: str | None = self.r_client.hget(
+            self.get_cache_key(self._dk__all_tasks), task_id
+        )
+        if task_data_cache:
+            task_data = TaskModel(**json.loads(task_data_cache))
+            return task_data
+        return None
+
+    def get_all_tasks_from_db(self) -> list[TaskModel]:
+        """
+        Get all tasks from the task db.
+        """
+        all_tasks = []
+        all_task_ids = self.r_client.hkeys(self.get_cache_key(self._dk__all_tasks))
+        for task_id in all_task_ids:
+            task_data_cache: str | None = self.r_client.hget(
+                self.get_cache_key(self._dk__all_tasks), task_id
+            )
+            if task_data_cache:
+                task_data = TaskModel(**json.loads(task_data_cache))
+                all_tasks.append(task_data)
+        return all_tasks
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
@@ -156,14 +210,6 @@ class RedisBackend(BaseBackend):
             data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
         return data
 
-    @property
-    def _completed(self) -> list[dict[str, Any]]:
-        """
-        Get the completed tasks.
-        """
-        result: str | None = self.r_client.get(self.get_cache_key(self._dk__completed))
-        return json.loads(result) if result else []
-
     def get_report(self) -> dict[str, Any]:
         """
         Get the report of the backend.
@@ -186,7 +232,7 @@ class RedisBackend(BaseBackend):
                 ]
                 for queue_name, queue_data in self._waiting.items()
             },
-            "completed_tasks": self._completed[::-1],
+            "all_tasks": [asdict(task) for task in self.get_all_tasks_from_db()],
         }
 
     async def cleanup(self):

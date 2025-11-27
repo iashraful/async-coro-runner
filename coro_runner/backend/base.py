@@ -30,13 +30,12 @@ class BaseBackend(abc.ABC):
         self._dk__concurrency = "concurrency"
         self._dk__waiting = "waiting"
         self._dk__running = "running"
-        self._dk__completed = "completed"
+        self._dk__all_tasks = "tasks"
         # This is the data dictionary.
         self.__data = {
             self._dk__concurrency: 1,
             self._dk__waiting: dict(),
             self._dk__running: set(),  # tuples of (task, task_id)
-            self._dk__completed: list(),
         }
         self.__task_db = dict()
 
@@ -125,24 +124,6 @@ class BaseBackend(abc.ABC):
                 f"Task {task.__name__} with ID {task_id} not found in running set."
             )
 
-    def add_task_to_completed(
-        self,
-        task: FutureFuncType,
-        result: Any = None,
-        exception: str | None = None,
-    ) -> dict[str, Any]:
-        """
-        Add a task to the completed dict.
-        """
-        _d = {
-            "task_name": get_task_name(task),
-            "result": result,
-            "exception": exception,
-            "action_time": datetime.now(),
-        }
-        self.__data[self._dk__completed].append(_d)
-        return _d
-
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
         Pop and single task from the waiting queue. If no task is available, return None.
@@ -175,13 +156,6 @@ class BaseBackend(abc.ABC):
         Get the running tasks.
         """
         return self.__data[self._dk__running]
-
-    @property
-    def _completed(self) -> list[dict[str, Any]]:
-        """
-        Get the completed tasks.
-        """
-        return self.__data[self._dk__completed]
 
     @property
     def running_task_count(self) -> int:
@@ -219,7 +193,6 @@ class BaseBackend(abc.ABC):
                 ]
                 for queue_name, queue_data in self._waiting.items()
             },
-            "completed_tasks": self._completed,
         }
 
     def is_valid_queue_name(self, queue_name: str) -> bool:

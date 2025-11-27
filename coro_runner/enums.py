@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class TaskStatusEnum(Enum):
+class TaskStatusEnum(IntEnum):
     PENDING = 0
     RUNNING = 1
     FINISHED = 2
