@@ -3,6 +3,7 @@ from collections import deque
 from datetime import datetime
 from typing import Any
 
+from coro_runner.enums import TaskStatusEnum
 from coro_runner.schema import TaskModel
 from coro_runner.utils import get_task_name
 
@@ -171,28 +172,49 @@ class BaseBackend(abc.ABC):
         """
         return any([len(queue["queue"]) for queue in self._waiting.values()])
 
+    def get_all_tasks_from_db(
+        self,
+    ) -> tuple[
+        list[TaskModel],  # waitings
+        list[TaskModel],  # runnings
+        list[TaskModel],  # completed
+        list[TaskModel],  # failed
+        list[TaskModel],  # cancelled
+    ]:
+        _waitings: list[TaskModel] = []
+        _runnings: list[TaskModel] = []
+        _completed: list[TaskModel] = []
+        _failed: list[TaskModel] = []
+        _cancelled: list[TaskModel] = []
+        for task_data in self.__task_db.values():
+            if task_data.status == TaskStatusEnum.PENDING.value:
+                _waitings.append(task_data)
+            elif task_data.status == TaskStatusEnum.RUNNING.value:
+                _runnings.append(task_data)
+            elif task_data.status == TaskStatusEnum.FINISHED.value:
+                _completed.append(task_data)
+            elif task_data.status == TaskStatusEnum.FAILED.value:
+                _failed.append(task_data)
+            elif task_data.status == TaskStatusEnum.CANCELLED.value:
+                _cancelled.append(task_data)
+        return _waitings, _runnings, _completed, _failed, _cancelled
+
     def get_report(self) -> dict[str, Any]:
         """
         Get the report of the backend.
         """
+        waiting, running, completed, failed, cancelled = self.get_all_tasks_from_db()
         return {
             "concurrency": self._concurrency,
             "running_task_count": len(self._running),
             "waiting_task_count": sum(
                 [len(queue["queue"]) for queue in self._waiting.values()]
             ),
-            "running_tasks": [task.__name__ for task, _ in self._running],
-            "waiting_tasks": {
-                queue_name: [
-                    {
-                        "function": item["fn"].__name__,
-                        "args": item["args"],
-                        "kwargs": item["kwargs"],
-                    }
-                    for item in queue_data["queue"]
-                ]
-                for queue_name, queue_data in self._waiting.items()
-            },
+            "waiting_tasks": waiting,
+            "running_tasks": running,
+            "completed_tasks": completed,
+            "failed_tasks": failed,
+            "cancelled_tasks": cancelled,
         }
 
     def is_valid_queue_name(self, queue_name: str) -> bool:

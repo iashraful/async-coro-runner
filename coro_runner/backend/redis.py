@@ -3,10 +3,12 @@ from collections import deque
 from dataclasses import asdict
 from datetime import datetime
 import json
+from os import wait
 import pickle
 from typing import Any
 from redis import ConnectionPool, Redis
 
+from coro_runner.enums import TaskStatusEnum
 from coro_runner.utils import get_task_name
 
 from ..logging import logger
@@ -162,11 +164,20 @@ class RedisBackend(BaseBackend):
             return task_data
         return None
 
-    def get_all_tasks_from_db(self) -> list[TaskModel]:
+    def get_all_tasks_from_db(
+        self,
+    ) -> tuple[
+        list[TaskModel],
+        list[TaskModel],
+        list[TaskModel],
+        list[TaskModel],
+        list[TaskModel],
+    ]:
         """
         Get all tasks from the task db.
         """
-        all_tasks = []
+        waitings, runnings, completed, failed, cancelled = [], [], [], [], []
+
         all_task_ids = self.r_client.hkeys(self.get_cache_key(self._dk__all_tasks))
         for task_id in all_task_ids:
             task_data_cache: str | None = self.r_client.hget(
@@ -174,8 +185,17 @@ class RedisBackend(BaseBackend):
             )
             if task_data_cache:
                 task_data = TaskModel(**json.loads(task_data_cache))
-                all_tasks.append(task_data)
-        return all_tasks
+                if task_data.status == TaskStatusEnum.PENDING.value:
+                    waitings.append(task_data)
+                elif task_data.status == TaskStatusEnum.RUNNING.value:
+                    runnings.append(task_data)
+                elif task_data.status == TaskStatusEnum.FINISHED.value:
+                    completed.append(task_data)
+                elif task_data.status == TaskStatusEnum.FAILED.value:
+                    failed.append(task_data)
+                elif task_data.status == TaskStatusEnum.CANCELLED.value:
+                    cancelled.append(task_data)
+        return waitings, runnings, completed, failed, cancelled
 
     def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
         """
@@ -209,31 +229,6 @@ class RedisBackend(BaseBackend):
         for key, value in data.items():
             data[key]["queue"] = pickle.loads(b64decode(value["queue"]))
         return data
-
-    def get_report(self) -> dict[str, Any]:
-        """
-        Get the report of the backend.
-        """
-        return {
-            "concurrency": self._concurrency,
-            "running_task_count": len(self._running),
-            "waiting_task_count": sum(
-                [len(queue["queue"]) for queue in self._waiting.values()]
-            ),
-            "running_tasks": [task.__name__ for task, _ in self._running],
-            "waiting_tasks": {
-                queue_name: [
-                    {
-                        "function": item["fn"].__name__,
-                        "args": item["args"],
-                        "kwargs": item["kwargs"],
-                    }
-                    for item in queue_data["queue"]
-                ]
-                for queue_name, queue_data in self._waiting.items()
-            },
-            "all_tasks": [asdict(task) for task in self.get_all_tasks_from_db()],
-        }
 
     async def cleanup(self):
         self.r_client.delete(self.get_cache_key(self._dk__concurrency))
