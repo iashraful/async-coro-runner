@@ -3,7 +3,6 @@ from collections import deque
 from dataclasses import asdict
 from datetime import datetime
 import json
-from os import wait
 import pickle
 from typing import Any
 from redis import ConnectionPool, Redis
@@ -112,6 +111,7 @@ class RedisBackend(BaseBackend):
         """
         task_data = TaskModel(
             name=get_task_name(task),
+            module=task.__module__,
             queue=queue_name,
             received=datetime.now(),
             args=list(args),

@@ -23,6 +23,7 @@ class TaskModel:
     """
 
     name: str
+    module: str
     queue: str
     received: datetime
     status: int = TaskStatusEnum.PENDING.value

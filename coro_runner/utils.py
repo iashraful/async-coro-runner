@@ -2,7 +2,8 @@ import asyncio
 
 from collections import deque
 from datetime import datetime
-from typing import Any
+import importlib
+from typing import Any, Callable
 
 
 from coro_runner.enums import TaskStatusEnum
@@ -65,14 +66,26 @@ def get_task_name(func: Any) -> str:
     Get the task name from the function.
     """
 
-    current_task = asyncio.current_task()
     if hasattr(func, "__name__"):
-        return (
-            func.__name__
-            if current_task is None
-            else f"{current_task.get_name()}:{func.__name__}"
-        )
+        return func.__name__
     elif hasattr(func, "__class__") and hasattr(func.__class__, "__name__"):
         return func.__class__.__name__
     else:
         return str(func)
+
+
+def get_full_path(func: Callable) -> str:
+    """
+    Get the full path of the function.
+    """
+    return f"{func.__module__}.{func.__name__}"
+
+
+def get_the_func(path: str) -> Callable:
+    """
+    Get the function from the full path.
+    """
+    module_path, func_name = path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    func = getattr(module, func_name)
+    return func

@@ -64,6 +64,7 @@ class BaseBackend(abc.ABC):
         """
         task_data = TaskModel(
             name=get_task_name(task),
+            module=task.__module__,
             queue=queue_name,
             received=datetime.now(),
             args=list(args),
