@@ -17,7 +17,7 @@ logger.addHandler(logging.StreamHandler())
 
 app = FastAPI(title="Coro Runner Example")
 runner = CoroRunner(
-    concurrency=5,
+    concurrency=10,
     backend=RedisBackend(conf=RedisConfig(host="redis", port=6379, db=0)),
     queue_conf=QueueConfig(
         queues=[

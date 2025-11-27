@@ -3,40 +3,38 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Worker Stats — Minimal Vue UI</title>
+    <title>Worker Stats — Upgraded (Option B)</title>
 
-    <!-- Vue 3 (global build) - single small script include -->
+    <!-- Vue 3 global build -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
     <style>
-      /* Minimal shadcn-like look: cards, rounded corners, subtle shadows */
       :root {
         --bg: #f7fafc;
         --card: #ffffff;
         --muted: #6b7280;
         --accent: #2563eb;
+        --danger: #ef4444;
         --success: #10b981;
         --border: #e6e9ee;
+        --glass: rgba(15, 23, 42, 0.03);
       }
-      html,
-      body {
-        height: 100%;
+      * {
+        box-sizing: border-box;
       }
       body {
         margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-          Roboto, "Helvetica Neue", Arial;
+        font-family: Inter, system-ui, Segoe UI, Roboto, Arial;
         background: var(--bg);
         color: #0f172a;
-        padding: 20px;
         -webkit-font-smoothing: antialiased;
+        padding: 18px;
       }
-
       .wrap {
-        max-width: 1100px;
+        max-width: 1200px;
         margin: 0 auto;
         display: grid;
-        gap: 18px;
+        gap: 16px;
       }
       header {
         display: flex;
@@ -45,7 +43,7 @@
         gap: 12px;
       }
       h1 {
-        font-size: 20px;
+        font-size: 18px;
         margin: 0;
       }
       .sub {
@@ -55,7 +53,7 @@
 
       .top-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 12px;
       }
       .card {
@@ -63,7 +61,7 @@
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 12px;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+        box-shadow: 0 8px 18px var(--glass);
       }
       .stat-title {
         font-size: 12px;
@@ -71,21 +69,35 @@
         margin-bottom: 6px;
       }
       .stat-value {
-        font-size: 26px;
-        font-weight: 600;
+        font-size: 22px;
+        font-weight: 700;
       }
 
-      .cols {
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .select {
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        font-size: 13px;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .grid-lists {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
-      .list-card {
-        min-height: 120px;
-        display: flex;
-        flex-direction: column;
+      .big-card {
+        grid-column: span 2;
       }
-
       .list-header {
         display: flex;
         align-items: center;
@@ -93,7 +105,8 @@
         margin-bottom: 8px;
       }
       .list-title {
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 14px;
       }
       .pill {
         font-size: 12px;
@@ -105,33 +118,61 @@
       }
 
       .list-body {
-        flex: 1;
+        max-height: 360px;
         overflow: auto;
-        padding-right: 4px;
+        padding-right: 6px;
       }
-      ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 8px;
-      }
-      li {
-        background: #fbfdff;
-        border-radius: 10px;
-        padding: 8px 10px;
-        border: 1px solid #f1f5f9;
-        font-size: 13px;
+      .task-row {
         display: flex;
         justify-content: space-between;
-        gap: 8px;
+        gap: 12px;
+        align-items: center;
+        padding: 8px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .task-left {
+        display: flex;
+        gap: 12px;
         align-items: center;
       }
-      .muted {
+      .badge {
+        padding: 6px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+        background: #fbfeff;
+      }
+      .status {
+        padding: 6px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .status.running {
+        background: rgba(37, 99, 235, 0.06);
+        color: var(--accent);
+        border: 1px solid rgba(37, 99, 235, 0.12);
+      }
+      .status.done {
+        background: rgba(16, 185, 129, 0.06);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.12);
+      }
+      .status.failed {
+        background: rgba(239, 68, 68, 0.06);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.12);
+      }
+      .meta {
         color: var(--muted);
         font-size: 12px;
       }
-      .meta {
+      .task-id {
+        font-family: monospace;
         font-size: 12px;
         color: var(--muted);
       }
@@ -142,45 +183,27 @@
         align-items: center;
       }
       .btn {
-        border: 1px solid var(--border);
-        background: white;
         padding: 6px 8px;
         border-radius: 8px;
-        font-size: 13px;
+        border: 1px solid var(--border);
+        background: white;
         cursor: pointer;
+        font-size: 13px;
       }
       .btn:disabled {
         opacity: 0.45;
         cursor: not-allowed;
       }
-      .select {
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        padding: 6px 8px;
-        background: white;
-        font-size: 13px;
-      }
 
-      footer {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 8px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      .small {
-        font-size: 12px;
-        color: var(--muted);
-      }
-
-      /* responsive */
       @media (max-width: 900px) {
-        .cols {
+        .top-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .grid-lists {
           grid-template-columns: 1fr;
         }
-        .top-grid {
-          grid-template-columns: repeat(1, 1fr);
+        .big-card {
+          grid-column: auto;
         }
       }
     </style>
@@ -190,68 +213,80 @@
       <header>
         <div>
           <h1>Worker Stats</h1>
-          <div class="sub">Live worker overview — updates every second</div>
+          <div class="sub">
+            Live overview — fetches <strong>{{pollInterval/1000}}s</strong>
+          </div>
         </div>
 
-        <div style="display: flex; gap: 10px; align-items: center">
-          <div class="small">
-            <select
-              v-model.number="pollInterval"
-              class="select"
-              title="Poll interval"
-            >
-              <option :value="2000">Polling 2s</option>
-              <option :value="5000">Polling 5s</option>
-              <option :value="10000">Polling 10s</option>
-              <option :value="15000">Polling 15s</option>
-              <option :value="30000">Polling 30s</option>
-              <option :value="60000">Polling 60s</option>
-            </select>
-          </div>
+        <div class="controls">
+          <div class="small">Poll</div>
+          <select
+            v-model.number="pollInterval"
+            class="select"
+            title="Poll interval"
+          >
+            <option :value="1000">1s</option>
+            <option :value="2000">2s</option>
+            <option :value="5000">5s</option>
+            <option :value="10000">10s</option>
+            <option :value="30000">30s</option>
+            <option :value="60000">60s</option>
+          </select>
+
+          <div class="small">Page</div>
           <select
             v-model.number="pageSize"
             class="select"
             title="Items per page"
           >
-            <option :value="5">5 / page</option>
-            <option :value="10">10 / page</option>
-            <option :value="15">15 / page</option>
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
           </select>
         </div>
       </header>
 
-      <!-- top stats -->
+      <!-- Top Stats -->
       <section class="top-grid">
         <div class="card">
           <div class="stat-title">Concurrency</div>
           <div class="stat-value">{{report.concurrency ?? '—'}}</div>
+          <div class="meta">Max parallel workers</div>
         </div>
+
         <div class="card">
-          <div class="stat-title">Running Tasks</div>
-          <div class="stat-value">{{report.running_task_count ?? 0}}</div>
+          <div class="stat-title">Running</div>
+          <div class="stat-value">{{counts.running}}</div>
+          <div class="meta">Currently executing</div>
         </div>
+
         <div class="card">
-          <div class="stat-title">Waiting Tasks</div>
-          <div class="stat-value">{{report.waiting_task_count ?? 0}}</div>
+          <div class="stat-title">Waiting</div>
+          <div class="stat-value">{{counts.waiting}}</div>
+          <div class="meta">Queued</div>
+        </div>
+
+        <div class="card">
+          <div class="stat-title">Completed</div>
+          <div class="stat-value">{{counts.completed}}</div>
+          <div class="meta">Finished without error</div>
         </div>
       </section>
 
-      <!-- lists -->
-      <section class="cols">
-        <!-- Running -->
-        <div class="card list-card">
+      <!-- Lists -->
+      <section class="grid-lists">
+        <!-- Left column: Running + Waiting -->
+        <div class="card">
           <div class="list-header">
             <div>
               <div class="list-title">Running</div>
-              <div class="muted">
-                {{report.running_tasks?.length ?? 0}} tasks
-              </div>
+              <div class="meta">{{counts.running}} tasks</div>
             </div>
             <div class="pagination">
               <button
                 class="btn"
                 @click="prev('running')"
-                :disabled="runningPage===1"
+                :disabled="runningPage<=1"
               >
                 Prev
               </button>
@@ -259,7 +294,7 @@
               <button
                 class="btn"
                 @click="next('running')"
-                :disabled="runningPage===runningPages"
+                :disabled="runningPage>=runningPages"
               >
                 Next
               </button>
@@ -267,32 +302,49 @@
           </div>
 
           <div class="list-body">
-            <ul>
-              <li v-for="item in pagedRunning" :key="`run-${itemIndex(item)}`">
-                <div>{{item}}</div>
-              </li>
-              <li
-                v-if="(report.running_tasks?.length ?? 0) === 0"
-                class="muted"
+            <div v-if="paged.running.length===0" class="meta">
+              No running tasks
+            </div>
+            <div v-for="t in paged.running" :key="t.task_id" class="task-row">
+              <div class="task-left">
+                <div>
+                  <div style="font-weight: 700">{{t.name}}</div>
+                  <div class="meta">
+                    {{t.queue}} • args: [{{t.args.join(', ')}}]
+                  </div>
+                  <div class="meta">started: {{t.started ?? '—'}}</div>
+                </div>
+              </div>
+
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: flex-end;
+                  gap: 6px;
+                "
               >
-                No running tasks
-              </li>
-            </ul>
+                <div :class="['status', statusClass(t.status)]">
+                  {{statusText(t.status)}}
+                </div>
+                <div class="task-id">{{shortId(t.task_id)}}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Waiting -->
-        <div class="card list-card">
+        <!-- Right column: Waiting + Failed/Cancelled summary -->
+        <div class="card">
           <div class="list-header">
             <div>
               <div class="list-title">Waiting</div>
-              <div class="muted">{{flatWaiting.length}} tasks (by queue)</div>
+              <div class="meta">{{counts.waiting}} tasks</div>
             </div>
             <div class="pagination">
               <button
                 class="btn"
                 @click="prev('waiting')"
-                :disabled="waitingPage===1"
+                :disabled="waitingPage<=1"
               >
                 Prev
               </button>
@@ -300,7 +352,7 @@
               <button
                 class="btn"
                 @click="next('waiting')"
-                :disabled="waitingPage===waitingPages"
+                :disabled="waitingPage>=waitingPages"
               >
                 Next
               </button>
@@ -308,39 +360,51 @@
           </div>
 
           <div class="list-body">
-            <ul>
-              <li v-for="(task, idx) in pagedWaiting" :key="`wait-${idx}`">
+            <div v-if="paged.waiting.length===0" class="meta">
+              No waiting tasks
+            </div>
+            <div v-for="t in paged.waiting" :key="t.task_id" class="task-row">
+              <div class="task-left">
                 <div>
-                  <div style="font-weight: 600; font-size: 13px">
-                    {{task.function}}
-                  </div>
+                  <div style="font-weight: 700">{{t.name}}</div>
                   <div class="meta">
-                    {{task.queue}} • args: [{{task.args.join(', ')}}]
+                    {{t.queue}} • received: {{t.received ?? '—'}}
                   </div>
+                  <div class="meta">args: [{{t.args.join(', ')}}]</div>
                 </div>
-                <div class="muted">q: {{task.queue}}</div>
-              </li>
-              <li v-if="flatWaiting.length === 0" class="muted">
-                No waiting tasks
-              </li>
-            </ul>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: flex-end;
+                  gap: 6px;
+                "
+              >
+                <div :class="['status', statusClass(t.status)]">
+                  {{statusText(t.status)}}
+                </div>
+                <div class="task-id">{{shortId(t.task_id)}}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Completed -->
-        <div class="card list-card" style="grid-column: span 2">
+        <!-- Bottom: Completed, Failed, Cancelled (span both columns) -->
+        <div class="card big-card">
           <div class="list-header">
             <div>
-              <div class="list-title">Completed</div>
-              <div class="muted">
-                {{report.completed_tasks?.length ?? 0}} items
+              <div class="list-title">Completed / Failed / Cancelled</div>
+              <div class="meta">
+                {{counts.completed}} completed • {{counts.failed}} failed •
+                {{counts.cancelled}} cancelled
               </div>
             </div>
             <div class="pagination">
               <button
                 class="btn"
                 @click="prev('completed')"
-                :disabled="completedPage===1"
+                :disabled="completedPage<=1"
               >
                 Prev
               </button>
@@ -350,7 +414,7 @@
               <button
                 class="btn"
                 @click="next('completed')"
-                :disabled="completedPage===completedPages"
+                :disabled="completedPage>=completedPages"
               >
                 Next
               </button>
@@ -358,31 +422,49 @@
           </div>
 
           <div class="list-body">
-            <ul>
-              <li v-for="task in pagedCompleted" :key="task.task_name">
-                <div style="display: flex; flex-direction: column">
-                  <div style="font-weight: 600">{{task.task_name}}</div>
-                  <div class="meta">{{task.result}} • {{task.action_time}}</div>
+            <div v-if="paged.completed.length===0" class="meta">
+              No completed/failed/cancelled tasks
+            </div>
+
+            <div v-for="t in paged.completed" :key="t.task_id" class="task-row">
+              <div class="task-left">
+                <div>
+                  <div style="font-weight: 700">{{t.name}}</div>
+                  <div class="meta">
+                    {{t.queue}} • started: {{t.started ?? '—'}} • finished:
+                    {{t.finished ?? '—'}}
+                  </div>
+                  <div class="meta">result: {{t.result ?? '—'}}</div>
                 </div>
-                <div
-                  :style="{color: task.exception ? '#ef4444' : 'var(--muted)', fontSize:'12px'}"
-                >
-                  {{ task.exception ? 'Error' : 'OK' }}
-                </div>
-              </li>
-              <li
-                v-if="(report.completed_tasks?.length ?? 0) === 0"
-                class="muted"
+              </div>
+
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: flex-end;
+                  gap: 6px;
+                "
               >
-                No completed tasks
-              </li>
-            </ul>
+                <div :class="['status', statusClass(t.status)]">
+                  {{statusText(t.status)}}
+                </div>
+                <div class="task-id">{{shortId(t.task_id)}}</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer>
-        <div class="small">Last update: {{lastUpdatedText}}</div>
+      <footer
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <div class="meta">Last update: {{ lastUpdatedText }}</div>
+        <div class="meta">Page size: {{pageSize}}</div>
       </footer>
     </div>
 
@@ -394,211 +476,266 @@
         setup() {
           const report = reactive({
             concurrency: null,
-            running_task_count: 0,
-            waiting_task_count: 0,
             running_tasks: [],
-            waiting_tasks: {},
+            waiting_tasks: [], // here waiting_tasks is array of tasks (per your new shape)
             completed_tasks: [],
+            failed_tasks: [],
+            cancelled_tasks: [],
           });
 
-          const lastUpdated = ref(null);
-          const pollInterval = ref(10000); // ms
-          const timer = { id: null };
-
-          // pagination state
+          // controls
+          const pollInterval = ref(2000);
           const pageSize = ref(10);
+
+          // paging (1-based)
           const runningPage = ref(1);
           const waitingPage = ref(1);
           const completedPage = ref(1);
 
-          // flatten waiting tasks into list with queue name
-          const flatWaiting = computed(() => {
-            const groups = report.waiting_tasks || {};
-            const arr = [];
-            for (const [queue, tasks] of Object.entries(groups)) {
-              if (!tasks || tasks.length === 0) continue;
-              for (const t of tasks) {
-                arr.push({
-                  queue,
-                  function: t.function ?? t.task_name ?? "unknown",
-                  args: t.args ?? [],
-                  kwargs: t.kwargs ?? {},
-                });
-              }
-            }
-            return arr;
-          });
+          const lastUpdated = ref(null);
+          let timer = null;
 
-          // paging helpers
-          function pageList(list, page, size) {
-            const s = Math.max(1, size);
-            const total = Math.max(0, list.length || 0);
-            const pages = Math.max(1, Math.ceil(total / s) || 1);
-            if (page.value > pages) page.value = pages;
-            const start = (page.value - 1) * s;
-            let d = {
-              items: list.slice(start, start + s),
-              pages,
+          // normalize: ensure arrays exist even if API returns different keys
+          function normalizeApi(json) {
+            // API might send waiting_tasks as [] or as object; we support both.
+            const safe = {
+              concurrency: json.concurrency ?? null,
+              running_tasks: Array.isArray(json.running_tasks)
+                ? json.running_tasks
+                : json.running_tasks?.items || [],
+              waiting_tasks: Array.isArray(json.waiting_tasks)
+                ? json.waiting_tasks
+                : json.waiting_tasks?.items || [],
+              completed_tasks: Array.isArray(json.completed_tasks)
+                ? json.completed_tasks
+                : json.completed_tasks?.items || [],
+              failed_tasks: Array.isArray(json.failed_tasks)
+                ? json.failed_tasks
+                : json.failed_tasks?.items || [],
+              cancelled_tasks: Array.isArray(json.cancelled_tasks)
+                ? json.cancelled_tasks
+                : json.cancelled_tasks?.items || [],
             };
-            return d;
+            return safe;
           }
 
-          const runningPages = computed(() =>
-            Math.max(
-              1,
-              Math.ceil((report.running_tasks?.length || 0) / pageSize.value)
-            )
-          );
-          const waitingPages = computed(() =>
-            Math.max(1, Math.ceil(flatWaiting.value.length / pageSize.value))
-          );
-          const completedPages = computed(() =>
-            Math.max(
-              1,
-              Math.ceil((report.completed_tasks?.length || 0) / pageSize.value)
-            )
-          );
+          // simple helper to get short task id
+          function shortId(id) {
+            if (!id) return "";
+            return id.slice(0, 8);
+          }
 
-          const pagedRunning = computed(
-            () =>
-              pageList(report.running_tasks || [], runningPage, pageSize.value)
-                .items
-          );
-          const pagedWaiting = computed(
-            () => pageList(flatWaiting.value, waitingPage, pageSize.value).items
-          );
-          const pagedCompleted = computed(
-            () =>
-              pageList(
-                report.completed_tasks || [],
-                completedPage,
-                pageSize.value
-              ).items
-          );
+          // status mapping (you mentioned status ints in example: 1 running, 2 done)
+          function statusText(s) {
+            if (s === 1) return "RUNNING";
+            if (s === 2) return "DONE";
+            if (s === 3) return "FAILED";
+            if (s === 4) return "CANCELLED";
+            return s ?? "—";
+          }
+          function statusClass(s) {
+            if (s === 1) return "running";
+            if (s === 2) return "done";
+            if (s === 3) return "failed";
+            if (s === 4) return "failed";
+            return "";
+          }
 
-          // small stable key function for list items
-          function itemIndex(it) {
-            // we don't have strong ids for running tasks, use index fallback
-            return report.running_tasks.indexOf(it);
+          // computed counts
+          const counts = computed(() => ({
+            running: (report.running_tasks || []).length,
+            waiting: (report.waiting_tasks || []).length,
+            completed: (report.completed_tasks || []).length,
+            failed: (report.failed_tasks || []).length,
+            cancelled: (report.cancelled_tasks || []).length,
+          }));
+
+          // paginated slices (1-based paging)
+          function pageSlice(arr, page) {
+            const s = Math.max(1, pageSize.value);
+            const p = Math.max(1, page || 1);
+            const totalPages = Math.max(1, Math.ceil((arr?.length || 0) / s));
+            const start = (p - 1) * s;
+            const items = (arr || []).slice(start, start + s);
+            return { items, totalPages };
+          }
+
+          const paged = reactive({
+            running: [],
+            waiting: [],
+            completed: [],
+          });
+
+          const runningPages = ref(1);
+          const waitingPages = ref(1);
+          const completedPages = ref(1);
+
+          function refreshPages() {
+            const run = pageSlice(
+              report.running_tasks || [],
+              runningPage.value
+            );
+            paged.running = run.items;
+            runningPages.value = run.totalPages;
+            if (runningPage.value > runningPages.value)
+              runningPage.value = runningPages.value;
+
+            const wait = pageSlice(
+              report.waiting_tasks || [],
+              waitingPage.value
+            );
+            paged.waiting = wait.items;
+            waitingPages.value = wait.totalPages;
+            if (waitingPage.value > waitingPages.value)
+              waitingPage.value = waitingPages.value;
+
+            // completed view shows completed + failed + cancelled combined (sorted by finished/received desc if available)
+            const combined = []
+              .concat(report.completed_tasks || [])
+              .concat(report.failed_tasks || [])
+              .concat(report.cancelled_tasks || []);
+            // optional: sort by finished or received timestamp descending (if present)
+            combined.sort((a, b) => {
+              const ta = a.finished || a.received || a.started || "";
+              const tb = b.finished || b.received || b.started || "";
+              return tb.localeCompare(ta);
+            });
+            const comp = pageSlice(combined, completedPage.value);
+            paged.completed = comp.items;
+            completedPages.value = comp.totalPages;
+            if (completedPage.value > completedPages.value)
+              completedPage.value = completedPages.value;
           }
 
           // next / prev
           function next(kind) {
-            if (kind === "running") {
-              if (runningPage.value < runningPages.value) runningPage.value++;
-            }
-            if (kind === "waiting") {
-              if (waitingPage.value < waitingPages.value) waitingPage.value++;
-            }
-            if (kind === "completed") {
-              if (completedPage.value < completedPages.value)
-                completedPage.value++;
-            }
+            if (kind === "running" && runningPage.value < runningPages.value)
+              runningPage.value++;
+            if (kind === "waiting" && waitingPage.value < waitingPages.value)
+              waitingPage.value++;
+            if (
+              kind === "completed" &&
+              completedPage.value < completedPages.value
+            )
+              completedPage.value++;
+            refreshPages();
           }
           function prev(kind) {
-            if (kind === "running") {
-              if (runningPage.value > 1) runningPage.value--;
-            }
-            if (kind === "waiting") {
-              if (waitingPage.value > 1) waitingPage.value--;
-            }
-            if (kind === "completed") {
-              if (completedPage.value > 1) completedPage.value--;
-            }
+            if (kind === "running" && runningPage.value > 1)
+              runningPage.value--;
+            if (kind === "waiting" && waitingPage.value > 1)
+              waitingPage.value--;
+            if (kind === "completed" && completedPage.value > 1)
+              completedPage.value--;
+            refreshPages();
           }
 
-          // data fetch
+          // fetch logic
           async function load() {
             try {
               const res = await fetch("/report", { cache: "no-cache" });
               if (!res.ok) throw new Error("HTTP " + res.status);
               const json = await res.json();
+              const s = normalizeApi(json);
 
-              // shallow update of reactive report
-              report.concurrency = json.concurrency;
-              report.running_task_count = json.running_task_count;
-              report.waiting_task_count = json.waiting_task_count;
-              report.running_tasks = json.running_tasks || [];
-              report.waiting_tasks = json.waiting_tasks || {};
-              report.completed_tasks = json.completed_tasks || [];
+              report.concurrency = s.concurrency;
+              report.running_tasks = s.running_tasks;
+              report.waiting_tasks = s.waiting_tasks;
+              report.completed_tasks = s.completed_tasks;
+              report.failed_tasks = s.failed_tasks;
+              report.cancelled_tasks = s.cancelled_tasks;
 
-              lastUpdated.value = new Date();
-              // ensure pages don't overflow after new data arrives
-              if (runningPage.value > runningPages.value)
-                runningPage.value = runningPages.value;
-              if (waitingPage.value > waitingPages.value)
-                waitingPage.value = waitingPages.value;
-              if (completedPage.value > completedPages.value)
-                completedPage.value = completedPages.value;
+              lastUpdated.value = new Date().toLocaleTimeString();
+              // reset pages if counts shrink
+              if (
+                runningPage.value >
+                Math.max(
+                  1,
+                  Math.ceil((report.running_tasks.length || 0) / pageSize.value)
+                )
+              )
+                runningPage.value = 1;
+              if (
+                waitingPage.value >
+                Math.max(
+                  1,
+                  Math.ceil((report.waiting_tasks.length || 0) / pageSize.value)
+                )
+              )
+                waitingPage.value = 1;
+              if (
+                completedPage.value >
+                Math.max(
+                  1,
+                  Math.ceil(
+                    ((report.completed_tasks.length || 0) +
+                      (report.failed_tasks.length || 0) +
+                      (report.cancelled_tasks.length || 0)) /
+                      pageSize.value
+                  )
+                )
+              )
+                completedPage.value = 1;
+
+              refreshPages();
             } catch (err) {
-              // keep previous data and log error
-              console.error("Failed to fetch /report:", err);
+              console.error("fetch /report error", err);
             }
           }
 
-          // readable last updated text
-          const lastUpdatedText = computed(() =>
-            lastUpdated.value ? lastUpdated.value.toLocaleTimeString() : "never"
-          );
+          // polling control (restarts interval when pollInterval changes)
+          function startTimer() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(load, pollInterval.value);
+          }
 
           onMounted(() => {
-            // initial load + start poll
             load();
-            timer.id = setInterval(load, pollInterval.value || 1000);
+            startTimer();
           });
           onBeforeUnmount(() => {
-            if (timer.id) clearInterval(timer.id);
+            if (timer) clearInterval(timer);
           });
 
-          // when user changes pageSize, reset pages to 1 for better UX
-          function watchPageSize() {
-            runningPage.value = 1;
-            waitingPage.value = 1;
-            completedPage.value = 1;
-          }
-
-          function watchPollInterval() {
-            if (timer.id) clearInterval(timer.id);
-            timer.id = setInterval(load, pollInterval.value || 1000);
-          }
-
-          // Watch changes on pollInterval
+          // watch pollInterval and pageSize via simple interval detection (no heavy watch API)
           let lastPI = pollInterval.value;
           setInterval(() => {
             if (lastPI !== pollInterval.value) {
               lastPI = pollInterval.value;
-              watchPollInterval();
+              startTimer();
             }
-          }, 200);
+          }, 250);
 
-          // watch changes on pageSize
-          // Vue global prod build doesn't include `watch` binding on setup returns; we can use a simple polling watcher via an interval to detect changes (lightweight):
           let lastPS = pageSize.value;
           setInterval(() => {
             if (lastPS !== pageSize.value) {
               lastPS = pageSize.value;
-              watchPageSize();
+              // reset pages to 1 for UX, then refresh
+              runningPage.value = 1;
+              waitingPage.value = 1;
+              completedPage.value = 1;
+              refreshPages();
             }
-          }, 200);
+          }, 250);
 
           return {
             report,
-            lastUpdatedText,
             pollInterval,
             pageSize,
             runningPage,
             waitingPage,
             completedPage,
-            pagedRunning,
-            pagedWaiting,
-            pagedCompleted,
+            paged,
             runningPages,
             waitingPages,
             completedPages,
+            counts,
             next,
             prev,
-            itemIndex,
-            flatWaiting,
+            lastUpdatedText: lastUpdated,
+            statusText,
+            statusClass,
+            shortId,
           };
         },
       }).mount("#app");
