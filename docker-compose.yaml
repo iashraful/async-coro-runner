@@ -5,7 +5,7 @@ services:
     ports:
       - "7001:8080"
     volumes:
-      - .:/code:synced
+      - .:/api
     environment:
       DEBUG: "true"
     command: uv run fastapi dev example/main.py --host 0.0.0.0 --port 8080

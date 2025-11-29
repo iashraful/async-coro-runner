@@ -1,37 +1,36 @@
-FROM python:3.13.7-alpine
+FROM python:3.13-slim AS builder
+WORKDIR /api
 
-COPY --from=ghcr.io/astral-sh/uv:0.8.14 /uv /uvx /bin/
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc g++ python3-dev libssl-dev libffi-dev zlib1g-dev libjpeg-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONFAULTHANDLER=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=random \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DEFAULT_TIMEOUT=100 \
-    TZ="Asia/Dhaka" \
-    UV_LINK_MODE="copy" \
-    APP_USERNAME="app_user" \
-    USER_HOME="/home/app_user"
+# Upgrade pip and install poetry
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir uv
 
-RUN apk add --no-cache \
-    tzdata \
-    bash \
-    shadow \
-    gcc \
-    musl-dev \
-    libffi-dev && \
-    cp /usr/share/zoneinfo/Asia/Dhaka /etc/localtime && \
-    echo "Asia/Dhaka" > /etc/timezone && \
-    pip install --no-cache-dir --upgrade pip
+# Configure poetry to avoid creating virtual environments
 
-RUN useradd --create-home --shell /bin/bash ${APP_USERNAME}
+# Copy only dependency files for caching
+COPY pyproject.toml uv.lock /api/
+# Install dependencies without root project
+RUN uv pip install --no-cache --system -r pyproject.toml
 
-WORKDIR ${USER_HOME}/code
-RUN chown -R ${APP_USERNAME}:${APP_USERNAME} ${USER_HOME}/code
+# Final stage
+FROM python:3.13-slim
+WORKDIR /api
+ENV UV_LINK_MODE=copy
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    netcat-traditional libjpeg-dev zlib1g-dev gcc && \
+    rm -rf /var/lib/apt/lists/*
 
-USER ${APP_USERNAME}
-ENV PATH="${USER_HOME}/.local/bin:${PATH}"
+# Copy installed dependencies from builder
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY --chown=${APP_USERNAME}:${APP_USERNAME} pyproject.toml uv.lock README.md ${USER_HOME}/code/
-
-RUN uv pip install --prefix ${USER_HOME}/.local .
-COPY --chown=${APP_USERNAME}:${APP_USERNAME} . ${USER_HOME}/code/
+# Copy application code
+COPY . /api/
