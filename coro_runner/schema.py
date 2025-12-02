@@ -34,6 +34,7 @@ class TaskModel:
     started: datetime | None = None
     finished: datetime | None = None
     exception: str | None = None
+    remark: str | None = None
 
 
 @dataclass

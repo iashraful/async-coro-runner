@@ -126,17 +126,26 @@ class BaseBackend(abc.ABC):
                 f"Task {task.__name__} with ID {task_id} not found in running set."
             )
 
-    def pop_task_from_waiting_queue(self) -> dict[str, FutureFuncType | Any] | None:
+    def pop_task_from_waiting_queue(self) -> list[dict[str, FutureFuncType | Any]]:
         """
         Pop and single task from the waiting queue. If no task is available, return None.
         It'll return the task based on the queue's score. The hightest score queue's task will be returned. 0 means low priority.
         """
+        _running_count = len(self._running)
+        _tasks_to_run = list()
+        if _running_count >= self._concurrency:
+            return list()
         for queue in sorted(
             self._waiting.values(), key=lambda x: x["score"], reverse=True
         ):
+            if _running_count + len(_tasks_to_run) >= self._concurrency:
+                break
+            
             if queue["queue"]:
-                return queue["queue"].popleft()
-        return None
+                # Here we pop multiple tasks if possible to fill the concurrency limit
+                _tasks_to_run = [queue["queue"].popleft() for _ in range(min(self._concurrency - (_running_count + len(_tasks_to_run)), len(queue["queue"])) - 1)]
+                _tasks_to_run.append(queue["queue"].popleft())
+        return _tasks_to_run
 
     @property
     def _concurrency(self) -> int:

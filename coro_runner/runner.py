@@ -55,8 +55,7 @@ class CoroRunner:
         self._backend.set_waiting(
             waitings=prepare_queue(queue_conf.queues, default_name=self._default_queue)
         )
-        self._loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-
+        
     def add_task(
         self,
         coro: FutureFuncType,
@@ -132,16 +131,20 @@ class CoroRunner:
                 result=result,
                 exception=str(err) if err else None,
             )
-            if self._backend.any_waiting_task:
-                coro2_data: dict[str, Any] | None = (
-                    self._backend.pop_task_from_waiting_queue()
+            await self._check_and_start_waiting_tasks()
+            
+    async def _check_and_start_waiting_tasks(self):
+        """
+        Check and start waiting tasks if there is any.
+        """
+        if self._backend.any_waiting_task:
+            coro2_data_list: list[dict] = self._backend.pop_task_from_waiting_queue()
+            for coro2_data in coro2_data_list:
+                __fn = coro2_data["fn"]
+                self._start_task(
+                    coro=__fn(*coro2_data["args"], **coro2_data["kwargs"]),
+                    task_id=coro2_data["task_id"],
                 )
-                if coro2_data:
-                    __fn = coro2_data["fn"]
-                    self._start_task(
-                        coro=__fn(*coro2_data["args"], **coro2_data["kwargs"]),
-                        task_id=coro2_data["task_id"],
-                    )
 
     async def run_until_exit(self):
         """
