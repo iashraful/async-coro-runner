@@ -77,21 +77,99 @@ runner.get_report()
 
 ```json
 {
-   "concurrency": 5,
-   "running_task_count": 5,
-   "waiting_task_count": 18,
-   "running_tasks": ["rand_delay","rand_delay","rand_delay","rand_delay","rand_delay"],
-   "waiting_tasks": {
-      "default": [],
-      "send_mail": [],
-      "async_task": [],
-      "low_priority": [
-         {"function":"rand_delay","args":["Static Msg",10],"kwargs":{}}
-      ]
-   },
-   "completed_tasks": [
-      {"task_name":"Task-4:rand_delay","result":"Done - Task-4","exception":null,"action_time":"2025-11-24 22:47:47.481516"},
-      {"task_name":"Task-9:rand_delay","result":"Done - Task-9","exception":null,"action_time":"2025-11-24 22:47:47.521230"}
-   ]
+  "concurrency": 1,
+  "running_task_count": 1,
+  "waiting_task_count": 1,
+  "waiting_tasks": [
+    {
+      "name": "rand_delay",
+      "module": "example.tasks",
+      "queue": "low_priority",
+      "received": "2025-12-03 15:27:48.798037",
+      "status": 0,
+      "task_id": "73556910-5bde-4d78-8559-03261e9ecc5a",
+      "args": [
+        "Static Msg",
+        10
+      ],
+      "kwargs": {},
+      "result": null,
+      "started": null,
+      "finished": null,
+      "exception": null,
+      "remark": null
+    }
+  ],
+  "running_tasks": [
+    {
+      "name": "rand_delay",
+      "module": "example.tasks",
+      "queue": "low_priority",
+      "received": "2025-12-03 15:27:48.800716",
+      "status": 1,
+      "task_id": "96e551e8-d11f-4d44-adeb-89743312553b",
+      "args": [
+        "Static Msg",
+        10
+      ],
+      "kwargs": {},
+      "result": null,
+      "started": "2025-12-03 15:33:33.768377",
+      "finished": null,
+      "exception": null,
+      "remark": null
+    }
+  ],
+  "completed_tasks": [
+    {
+      "name": "rand_delay",
+      "module": "example.tasks",
+      "queue": "low_priority",
+      "received": "2025-12-03 15:27:48.815023",
+      "status": 2,
+      "task_id": "bcfc2a30-5c94-4e87-8ef4-69ad2b1cfda7",
+      "args": [
+        "Static Msg",
+        10
+      ],
+      "kwargs": {},
+      "result": "Done - Task-3",
+      "started": "2025-12-03 15:30:23.438796",
+      "finished": "2025-12-03 15:30:24.673085",
+      "exception": null,
+      "remark": null
+    }
+  ],
+  "failed_tasks": [],
+  "cancelled_tasks": [
+    {
+      "name": "rand_delay",
+      "module": "example.tasks",
+      "queue": "low_priority",
+      "received": "2025-12-03 15:27:48.788677",
+      "status": 4,
+      "task_id": "b7469ba4-de5c-4117-b8ef-2655cef30f52",
+      "args": [
+        "Static Msg",
+        10
+      ],
+      "kwargs": {},
+      "result": null,
+      "started": "2025-12-03 15:27:48.820860",
+      "finished": "2025-12-03 15:28:00.158958",
+      "exception": null,
+      "remark": "Server Restarted"
+    }
+  ]
 }
+```
+
+## Revive and Restore the waiting tasks
+
+Here you can easily start your waiting tasks after server got restarted. But remember you must need a physical db backend(Currently RedisBackend.).
+
+**Just call the following method at your application startup.**
+
+```python
+await runner.revive_and_restore_waiting_tasks()
 ```

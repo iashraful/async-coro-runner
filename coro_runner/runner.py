@@ -12,7 +12,6 @@ from .logging import logger
 from .schema import QueueConfig, TaskModel
 from .types import FutureFuncType
 
-
 class CoroRunner:
     """
     AsyncIO Based Coroutine Runner
@@ -55,6 +54,8 @@ class CoroRunner:
         self._backend.set_waiting(
             waitings=prepare_queue(queue_conf.queues, default_name=self._default_queue)
         )
+
+        
         
     def add_task(
         self,
@@ -131,11 +132,12 @@ class CoroRunner:
                 result=result,
                 exception=str(err) if err else None,
             )
-            await self._check_and_start_waiting_tasks()
+            await self.revive_and_restore_waiting_tasks()
             
-    async def _check_and_start_waiting_tasks(self):
+    async def revive_and_restore_waiting_tasks(self):
         """
         Check and start waiting tasks if there is any.
+        This method is useful during server restart to revive the waiting tasks from the backend.
         """
         if self._backend.any_waiting_task:
             coro2_data_list: list[dict] = self._backend.pop_task_from_waiting_queue()

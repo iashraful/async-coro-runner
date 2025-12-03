@@ -1,5 +1,7 @@
 import asyncio
+from contextlib import asynccontextmanager
 import logging
+from pdb import run
 from random import random
 
 from .tasks import dummy_email_send, rand_delay
@@ -16,7 +18,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
-app = FastAPI(title="Coro Runner Example")
 runner = CoroRunner(
     concurrency=10,
     backend=RedisBackend(conf=RedisConfig(host="redis", port=6379, db=0)),
@@ -28,6 +29,18 @@ runner = CoroRunner(
         ],
     ),
 )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup code
+    await runner.revive_and_restore_waiting_tasks()
+    yield
+    # Shutdown code
+
+app = FastAPI(title="Coro Runner Example", lifespan=lifespan)
+
+
 
 
 
