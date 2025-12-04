@@ -1,20 +1,42 @@
 [project]
 name = "coro-runner"
-version = "0.2.3"
 description = "It's a python based asyncio task schedular/queue mechanism"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-    "redis[hiredis]>=6.4.0",
+version = "0.2.3"
+dependencies = []
+
+# Optional dependencies (extras)
+[project.optional-dependencies]
+
+mysql = [
+  "aiomysql>=0.2.0",
+]
+pg = [
+  "asyncpg>=0.29",
+]
+redis = [
+  "redis>=6.4",
+  "hiredis>=3.2",
+]
+all = [
+  "aiomysql>=0.2.0",
+  "asyncpg>=0.29",
+  "redis>=6.4",
+  "hiredis>=3.2",
 ]
 
 [dependency-groups]
 dev = [
-    "fastapi[standard]>=0.117.1",
-    "pytest>=8.4.2",
-    "pytest-asyncio>=1.2.0",
+  "fastapi[standard]>=0.117.1",
+  "pytest>=8.4.2",
+  "pytest-asyncio>=1.2.0",
+  "aiomysql>=0.2.0",
+  "asyncpg>=0.29",
+  "redis>=6.4",
+  "hiredis>=3.2",
 ]
 
 [tool.pytest.ini_options]
-minversion = "6.0"
 addopts = "-s"
+minversion = "6.0"
