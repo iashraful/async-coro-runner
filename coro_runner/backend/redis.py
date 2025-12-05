@@ -3,7 +3,6 @@ from dataclasses import asdict
 from datetime import datetime
 import json
 from typing import Any
-from redis import ConnectionPool, Redis
 
 from coro_runner.enums import TaskStatusEnum
 from coro_runner.utils import get_task_name, get_the_func
@@ -14,6 +13,13 @@ from coro_runner.types import FutureFuncType
 from .base import BaseBackend
 
 from ..schema import RedisConfig, TaskModel
+
+try:
+    from redis import ConnectionPool, Redis
+except ImportError:
+    raise ImportError(
+        "redis is required to use RedisBackend. Please install it with 'pip install coro-runner[redis]'"
+    )
 
 
 class RedisBackend(BaseBackend):
@@ -34,7 +40,6 @@ class RedisBackend(BaseBackend):
     def __close(self) -> None:
         self.r_client.close()
 
-
     def set_waiting(self, waitings: dict[str, dict[str, deque]]) -> None:
         """
         Set the queue configuration.
@@ -46,13 +51,15 @@ class RedisBackend(BaseBackend):
                 queue_name = task.queue
                 if queue_name not in waitings:
                     waitings[queue_name] = {"score": 1, "queue": deque()}
-                waitings[queue_name]["queue"].append({
-                    "task_id": task.task_id,
-                    "fn": get_the_func(f"{task.module}.{task.name}"),
-                    "args": task.args,
-                    "kwargs": task.kwargs,
-                })
-        if len(all_tasks[1])    > 0:
+                waitings[queue_name]["queue"].append(
+                    {
+                        "task_id": task.task_id,
+                        "fn": get_the_func(f"{task.module}.{task.name}"),
+                        "args": task.args,
+                        "kwargs": task.kwargs,
+                    }
+                )
+        if len(all_tasks[1]) > 0:
             # There are running tasks in the DB, we need them updated as cancelled
             for task in all_tasks[1]:
                 self.update_task_in_db(
@@ -61,8 +68,7 @@ class RedisBackend(BaseBackend):
                     finished=datetime.now(),
                     remark="Server Restarted",
                 )
-        super().set_waiting(waitings)   
-        
+        super().set_waiting(waitings)
 
     def get_cache_key(self, key: str) -> str:
         return f"{self._cache_prefix}:{key}"
