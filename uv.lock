@@ -126,7 +126,7 @@ wheels = [
 
 [[package]]
 name = "coro-runner"
-version = "0.2.5"
+version = "0.2.7"
 source = { virtual = "." }
 
 [package.optional-dependencies]

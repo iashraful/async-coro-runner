@@ -21,7 +21,7 @@ class RedisBackend(BaseBackend):
         self.r_client = self.__connect(conf)
         self._cache_prefix = "coro_runner"
 
-    def __connect(self, conf: RedisConfig) -> Redis:
+    def __connect(self, conf: RedisConfig) -> "Redis":
         try:
             from redis import ConnectionPool, Redis
         except ImportError:
