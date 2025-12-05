@@ -3,7 +3,7 @@ name = "coro-runner"
 description = "It's a python based asyncio task schedular/queue mechanism"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = []
 
 # Optional dependencies (extras)

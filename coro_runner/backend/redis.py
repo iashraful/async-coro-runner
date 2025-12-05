@@ -14,13 +14,6 @@ from .base import BaseBackend
 
 from ..schema import RedisConfig, TaskModel
 
-try:
-    from redis import ConnectionPool, Redis
-except ImportError:
-    raise ImportError(
-        "redis is required to use RedisBackend. Please install it with 'pip install coro-runner[redis]'"
-    )
-
 
 class RedisBackend(BaseBackend):
     def __init__(self, conf: RedisConfig) -> None:
@@ -29,6 +22,12 @@ class RedisBackend(BaseBackend):
         self._cache_prefix = "coro_runner"
 
     def __connect(self, conf: RedisConfig) -> Redis:
+        try:
+            from redis import ConnectionPool, Redis
+        except ImportError:
+            raise ImportError(
+                "redis is required to use RedisBackend. Please install it with 'pip install coro-runner[redis]'"
+            )
         pool = ConnectionPool(
             host=conf.host,
             port=conf.port,
