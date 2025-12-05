@@ -12,12 +12,13 @@ This project leverages `asyncio` (introduced in Python 3.4) to simplify handling
 - **Configurable Concurrency**: Define the number of concurrent tasks when initializing the runner.
 - **Efficient Task Management**: Run multiple tasks concurrently with streamlined execution control.
 - **Worker Queue**: Multiple queue can be configued along with their priority.
+- **Monitoring Tool Integration**: Support for real-time task monitoring and analytics. We have report now.
+- **Robust Logging**: Detailed logging to track task execution and debug issues. Debug log has been placed.
 
 ### Planned Enhancements
 
-- **Monitoring Tool Integration**: Support for real-time task monitoring and analytics.
 - **Low-Level API**: Features such as callbacks, acknowledgments, and error handling for advanced use cases.
-- **Robust Logging**: Detailed logging to track task execution and debug issues.
+- **More Backends**: I have plan to have multiple backends and room to develop according to user's choice too.
 
 ## Getting Started
 
@@ -27,6 +28,8 @@ To install `coro-runner`, use pip:
 
 ```bash
 pip install coro-runner
+
+pip install coro-runner[redis]  # If you want to use RedisBackend
 ```
 
 ### Full documentation
@@ -51,7 +54,7 @@ pip install coro-runner
 ### Prerequisites
 
 - Python 3.12 or later
-- [Poetry](https://python-poetry.org/) for dependency management
+- [Uv](https://docs.astral.sh/uv/getting-started/installation/) for dependency management
 
 ### Installation and Setup
 
@@ -62,16 +65,16 @@ pip install coro-runner
    cd async-coro-runner
    ```
 
-2. Activate the virtual environment:
+2. Run any command using `uv`:
 
    ```bash
-   poetry shell
+   uv run <Command>
    ```
 
 3. Install dependencies:
 
    ```bash
-   poetry install
+   uv sync
    ```
 
 ### Running Tests
@@ -79,7 +82,7 @@ pip install coro-runner
 Run the test suite to verify the setup:
 
 ```bash
-pytest -s
+uv run pytest -s
 ```
 
 **Sample Output:**
