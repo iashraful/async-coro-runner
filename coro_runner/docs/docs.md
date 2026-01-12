@@ -63,6 +63,22 @@ runner = CoroRunner(
 
 **If you have auth in redis? then, you can send password on RedisConfig**
 
+## Logging
+
+By default, the `coro_runner` logger is disabled. You can easily enable logging by passing the `log_level` argument to the `CoroRunner`.
+
+```python
+import logging
+from coro_runner import CoroRunner
+
+runner = CoroRunner(
+    concurrency=10,
+    log_level=logging.INFO
+)
+```
+
+This will output the logs to the standard output (console).
+
 ## Stats/Reporting Page
 
 ![Stats Page](../../example/stats.png "Stats Page")

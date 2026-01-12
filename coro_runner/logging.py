@@ -1,5 +1,7 @@
 import logging
 
 logger = logging.getLogger("coro_runner")
-logger.setLevel(logging.WARNING)
-logger.addHandler(logging.NullHandler())
+
+def update_logger(log_level: int) -> None:
+    logger.setLevel(log_level)
+    logger.addHandler(logging.StreamHandler())

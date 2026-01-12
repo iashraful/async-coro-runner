@@ -1,3 +1,5 @@
+from coro_runner.logging import update_logger
+import logging
 import asyncio
 from datetime import datetime
 from typing import Any
@@ -44,6 +46,7 @@ class CoroRunner:
         concurrency: int,
         queue_conf: QueueConfig | None = None,
         backend: BaseBackend = InMemoryBackend(),
+        log_level: int = logging.CRITICAL
     ) -> None:
         self._default_queue: str = "default"
         if queue_conf is None:
@@ -54,6 +57,7 @@ class CoroRunner:
         self._backend.set_waiting(
             waitings=prepare_queue(queue_conf.queues, default_name=self._default_queue)
         )
+        update_logger(log_level)
 
         
         
@@ -104,7 +108,7 @@ class CoroRunner:
             coro, task_id
         )  # Here coro is couroutine object with all the params
         asyncio.create_task(self._task(coro, task_id))
-        logger.debug(f"Started task: {coro.__name__}. ID: {task_id}")
+        logger.info(f"Started task: {coro.__name__}. Task ID: {task_id}")
 
     async def _task(self, coro: FutureFuncType, task_id: str):
         """
@@ -120,6 +124,7 @@ class CoroRunner:
                 started=datetime.now(),
             )
             result = await coro
+            logger.info(f"Task: {coro.__name__}. Task ID: {task_id} finished successfully")
             return result
         except Exception as err:
             logger.error(f"Error in task {coro.__name__}: {err}")
