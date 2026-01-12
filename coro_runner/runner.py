@@ -1,3 +1,4 @@
+import json
 from coro_runner.logging import update_logger
 import logging
 import asyncio
@@ -61,7 +62,7 @@ class CoroRunner:
 
         
         
-    def add_task(
+    async def add_task(
         self,
         coro: FutureFuncType,
         args: list | tuple = [],
@@ -79,12 +80,20 @@ class CoroRunner:
             queue_name = self._default_queue
         if self._backend.is_valid_queue_name(queue_name) is False:
             raise ValueError(f"Unknown queue name: {queue_name}")
+        
+        if not isinstance(self._backend, InMemoryBackend):
+            try:
+                json.dumps(args)
+                json.dumps(kwargs)
+            except (TypeError, OverflowError):
+                raise ValueError("Arguments must be JSON serializable when using a persistent backend.")
+        
         logger.debug("Adding the task to db.")
-        task_data: TaskModel = self._backend.add_task_to_db(
+        task_data: TaskModel = await self._backend.add_task_to_db(
             queue_name, coro, args, kwargs
         )
 
-        logger.debug(
+        logger.info(
             f"Adding Task: {coro.__name__}({task_data.task_id}) to queue: {queue_name}"
         )
         if len(self._backend._running) >= self._backend._concurrency:
@@ -98,7 +107,12 @@ class CoroRunner:
         """
         Get the report of the runner. It'll return the number of running, waiting and completed tasks.
         """
-        return self._backend.get_report()
+        # Since backend.get_report is async now, this must be async OR usage of loop?
+        # Ideally this should be async.
+        raise NotImplementedError("Use get_report_async instead or update calls.")
+        
+    async def get_report_async(self) -> dict[str, Any]:
+         return await self._backend.get_report()
 
     def _start_task(self, coro: FutureFuncType, task_id: str):
         """
@@ -118,7 +132,7 @@ class CoroRunner:
         err = None
         result = None
         try:
-            self._backend.update_task_in_db(
+            await self._backend.update_task_in_db(
                 task_id,
                 status=TaskStatusEnum.RUNNING.value,
                 started=datetime.now(),
@@ -130,7 +144,7 @@ class CoroRunner:
             logger.error(f"Error in task {coro.__name__}: {err}")
         finally:
             self._backend.remove_task_from_running(coro, task_id)
-            self._backend.update_task_in_db(
+            await self._backend.update_task_in_db(
                 task_id,
                 status=TaskStatusEnum.FINISHED.value,
                 finished=datetime.now(),
@@ -144,6 +158,7 @@ class CoroRunner:
         Check and start waiting tasks if there is any.
         This method is useful during server restart to revive the waiting tasks from the backend.
         """
+        await self._backend.restore_waitings()
         if self._backend.any_waiting_task:
             coro2_data_list: list[dict] = self._backend.pop_task_from_waiting_queue()
             for coro2_data in coro2_data_list:

@@ -42,7 +42,7 @@ app = FastAPI(title="Coro Runner Example", lifespan=lifespan)
 @app.get("/random-delay")
 async def fire_random_delay(count: int = 25):
     for _ in range(count):
-        runner.add_task(
+        await runner.add_task(
             rand_delay,
             args=(
                 "Static Msg",
@@ -56,7 +56,7 @@ async def fire_random_delay(count: int = 25):
 @app.post("/dummy-send-email")
 async def fire_send_email(count: int = 25, emails: list[str] = []):
     for _ in range(count):
-        runner.add_task(
+        await runner.add_task(
             dummy_email_send,
             queue_name="send_mail",
             kwargs={"recipient_emails": emails},
@@ -66,7 +66,7 @@ async def fire_send_email(count: int = 25, emails: list[str] = []):
 
 @app.get("/report")
 async def get_report():
-    return runner.get_report()
+    return await runner.get_report_async()
 
 
 @app.get("/stats")

@@ -44,3 +44,21 @@ class RedisConfig:
     db: int
     username: str | None = None
     password: str | None = None
+
+@dataclass
+class MySQLConfig:
+    host: str
+    port: int
+    user: str
+    password: str
+    db: str
+
+
+@dataclass
+class PGConfig:
+    host: str
+    port: int
+    user: str
+    password: str
+    db: str
+

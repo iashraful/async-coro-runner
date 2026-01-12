@@ -11,18 +11,19 @@ dependencies = []
 
 mysql = [
   "aiomysql>=0.2.0",
+  "cryptography",
 ]
 pg = [
   "asyncpg>=0.29",
 ]
 redis = [
-  "redis>=6.4",
+  "redis>=5.0.0",
   "hiredis>=3.2",
 ]
 all = [
   "aiomysql>=0.2.0",
   "asyncpg>=0.29",
-  "redis>=6.4",
+  "redis>=5.0.0",
   "hiredis>=3.2",
 ]
 
@@ -32,9 +33,11 @@ dev = [
   "pytest>=8.4.2",
   "pytest-asyncio>=1.2.0",
   "aiomysql>=0.2.0",
+  "cryptography",
   "asyncpg>=0.29",
-  "redis>=6.4",
+  "redis>=5.0.0",
   "hiredis>=3.2",
+  "packaging",
 ]
 
 [tool.pytest.ini_options]
